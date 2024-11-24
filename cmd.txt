@@ -1,0 +1,21 @@
+python run_experiment.py --mode train \
+--experiment_name Boat2D_s0_Aug \
+--wandb_project RSS \
+--wandb_group Boat2D \
+--wandb_name Boat2D_s0_Aug \
+--experiment_class DeepReach \
+--dynamics_class Boat2DAug \
+--numpoints 90000 \
+--pretrain \
+--pretrain_iters 50000  \
+--counter_end 300000 \
+--num_epochs 350000 \
+--minWith target \
+--dirichlet_loss_divisor 0.023 \
+--batch_size 32 \
+--lr 0.00002 \
+--deepReach_model exact \
+--seed 0 \
+--num_nl 512 \
+--tMax 10.0 \
+--val_time_resolution 3
