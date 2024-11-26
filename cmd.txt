@@ -7,9 +7,9 @@ python run_experiment.py --mode train \
 --dynamics_class Boat2DAug \
 --numpoints 90000 \
 --pretrain \
---pretrain_iters 50000  \
---counter_end 300000 \
---num_epochs 350000 \
+--pretrain_iters 10000  \
+--counter_end 200000 \
+--num_epochs 210000 \
 --minWith target \
 --dirichlet_loss_divisor 0.023 \
 --batch_size 32 \
@@ -17,5 +17,5 @@ python run_experiment.py --mode train \
 --deepReach_model exact \
 --seed 0 \
 --num_nl 512 \
---tMax 10.0 \
+--tMax 2.0 \
 --val_time_resolution 3

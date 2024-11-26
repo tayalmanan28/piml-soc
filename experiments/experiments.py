@@ -150,11 +150,12 @@ class Experiment(ABC):
         x_min, x_max = state_test_range[plot_config['x_axis_idx']]
         y_min, y_max = state_test_range[plot_config['y_axis_idx']]
         z_min, z_max = state_test_range[plot_config['z_axis_idx']]
+        # z_min, z_max = (torch.Tensor([0]), torch.Tensor([6]))
 
         times = torch.linspace(0, self.dataset.tMax, time_resolution)
         xs = torch.linspace(x_min, x_max, x_resolution)
         ys = torch.linspace(y_min, y_max, y_resolution)
-        zs = torch.linspace(z_min, z_max, z_resolution)
+        zs = torch.linspace(z_min+0.1, z_max-0.1, z_resolution)
         xys = torch.cartesian_prod(xs, ys)
 
         fig = plt.figure(figsize=(5*len(times), 5*len(zs)))
