@@ -270,7 +270,7 @@ if (mode == 'all') or (mode == 'train'):
     if dynamics.loss_type == 'brt_hjivi':
         loss_fn = losses.init_brt_hjivi_loss(
             dynamics, orig_opt.minWith, orig_opt.dirichlet_loss_divisor)
-    if dynamics.loss_type == 'brt_aug_hjivi':
+    elif dynamics.loss_type == 'brt_aug_hjivi':
         loss_fn = losses.init_brt_hjivi_aug_loss(
             dynamics, orig_opt.minWith, orig_opt.dirichlet_loss_divisor)
     elif dynamics.loss_type == 'brat_hjivi':

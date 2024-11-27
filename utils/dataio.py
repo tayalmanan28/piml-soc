@@ -138,6 +138,10 @@ class ReachabilityDataset(Dataset):
             return {'model_coords': model_coords, 'switch_samples': switch_samples}, {'boundary_values': boundary_values, 'dirichlet_masks': dirichlet_masks, 'switch_masks': switch_mask}
         elif self.dynamics.loss_type == 'brt_hjivi' and self.num_switch_samples == 0:
             return {'model_coords': model_coords}, {'boundary_values': boundary_values, 'dirichlet_masks': dirichlet_masks}
+        elif self.dynamics.loss_type == 'brt_aug_hjivi' and self.num_switch_samples > 0:
+            return {'model_coords': model_coords, 'switch_samples': switch_samples}, {'boundary_values': boundary_values, 'dirichlet_masks': dirichlet_masks, 'switch_masks': switch_mask}
+        elif self.dynamics.loss_type == 'brt_aug_hjivi' and self.num_switch_samples == 0:
+            return {'model_coords': model_coords}, {'boundary_values': boundary_values, 'dirichlet_masks': dirichlet_masks}
         elif self.dynamics.loss_type == 'brat_hjivi':
             return {'model_coords': model_coords}, {'boundary_values': boundary_values, 'reach_values': reach_values, 'avoid_values': avoid_values, 'dirichlet_masks': dirichlet_masks}
         else:

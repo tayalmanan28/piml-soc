@@ -33,7 +33,7 @@ class Dynamics(ABC):
         self.exact_factor = exact_factor
 
         assert self.loss_type in [
-            'brt_hjivi', 'brat_hjivi'], f'loss type {self.loss_type} not recognized'
+            'brt_hjivi', 'brt_aug_hjivi', 'brat_hjivi'], f'loss type {self.loss_type} not recognized'
         if self.loss_type == 'brat_hjivi':
             assert callable(self.reach_fn) and callable(self.avoid_fn)
         assert self.set_mode in [
