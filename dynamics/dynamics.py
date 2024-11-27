@@ -463,11 +463,11 @@ class DroneDelivery(Dynamics):
 
 class Boat2DAug(Dynamics):
     def __init__(self):
-        self.goalR = 0.25
+        self.goalR = 0.0
         self.avoid_fn_weight = 1
         self.v_max = 1
         super().__init__(
-            loss_type='brt_hjivi', set_mode="avoid",
+            loss_type='brt_aug_hjivi', set_mode="avoid",
             state_dim=3, input_dim=4, control_dim=2, disturbance_dim=0,
             state_mean=[-0.5, 0, 3],
             state_var=[2.5, 2, 3.1],
@@ -519,7 +519,7 @@ class Boat2DAug(Dynamics):
         dist2 = torch.norm(dp2[..., 0:2], float('inf'), dim=-1) - 0.2
 
         dist = self.avoid_fn_weight * (torch.minimum(dist1, dist2))
-        return torch.where((dist >= 0), dist*5, dist)
+        return dist#torch.where((dist >= 0), dist*5, dist)
 
     def boundary_fn(self, state):
         return torch.maximum(-self.avoid_fn(state), - state[...,2])
@@ -531,7 +531,7 @@ class Boat2DAug(Dynamics):
         dist = state[..., 0:2]*1.0
         dist[..., 0] = dist[..., 0]-(1.5)
         dist[..., 1] = dist[..., 1]-(0)
-        return torch.norm(dist[..., 0:2], dim=-1)
+        return torch.norm(dist[..., 0:2], dim=-1) -self.goalR
 
     def cost_fn(self, state_traj):
         return torch.min(self.boundary_fn(state_traj), dim=-1).values

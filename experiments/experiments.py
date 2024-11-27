@@ -386,6 +386,9 @@ class Experiment(ABC):
                     if self.dataset.dynamics.loss_type == 'brt_hjivi':
                         losses = loss_fn(
                             states, values, dvs[..., 0], dvs[..., 1:], boundary_values, dirichlet_masks, model_results['model_out']) #switch_results1, switch_results2, switch_results3)
+                    elif self.dataset.dynamics.loss_type == 'brt_aug_hjivi':
+                        losses = loss_fn(
+                            states, values, dvs[..., 0], dvs[..., 1:], boundary_values, dirichlet_masks, model_results['model_out'])
                     elif self.dataset.dynamics.loss_type == 'brat_hjivi':
                         losses = loss_fn(
                             states, values, dvs[..., 0], dvs[..., 1:], boundary_values, reach_values, avoid_values, dirichlet_masks, model_results['model_out'])
