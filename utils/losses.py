@@ -65,9 +65,9 @@ def init_brt_hjivi_aug_loss(dynamics, minWith, dirichlet_loss_divisor):
 
             diff_constraint_hom = dvdt - ham
             if minWith == 'target':
-                diff_constraint_hom = torch.max(
-                    diff_constraint_hom, -value + boundary_value)
-        dirichlet = -value[dirichlet_mask] + boundary_value[dirichlet_mask]
+                diff_constraint_hom = torch.min(
+                    diff_constraint_hom, value - boundary_value)
+        dirichlet = value[dirichlet_mask] - boundary_value[dirichlet_mask]
         if dynamics.deepReach_model == 'exact':
             if torch.all(dirichlet_mask):
                 dirichlet = output.squeeze(dim=-1)[dirichlet_mask]-0.0

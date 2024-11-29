@@ -464,7 +464,7 @@ class DroneDelivery(Dynamics):
 class Boat2DAug(Dynamics):
     def __init__(self):
         self.goalR = 0.0
-        self.avoid_fn_weight = 1
+        self.avoid_fn_weight = -1
         self.v_max = 1
         super().__init__(
             loss_type='brt_aug_hjivi', set_mode="avoid",
@@ -522,7 +522,7 @@ class Boat2DAug(Dynamics):
         return dist#torch.where((dist >= 0), dist*5, dist)
 
     def boundary_fn(self, state):
-        return torch.maximum(-self.avoid_fn(state), - state[...,2])
+        return torch.maximum(self.avoid_fn(state), - state[...,2])
 
     def sample_target_state(self, num_samples):
         raise NotImplementedError

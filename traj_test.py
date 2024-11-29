@@ -6,6 +6,7 @@ from utils import modules
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Rectangle, Circle
+from final_value_nn import FeedforwardNN
 
 def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 10, tMin = 0):
     policy = model
@@ -77,7 +78,7 @@ if __name__ =="__main__":
 
     dyn = Boat2DAug()
 
-    model = modules.SingleBVPNet(in_features=dyn.input_dim, out_features=1, type='sine', mode='mlp',
+    model = FeedforwardNN(in_features=2, out_features=1, type='sine', mode='mlp',
                              final_layer_factor=1., hidden_features=512, num_hidden_layers=3)
     model_path = os.path.join('runs/Boat2D_s0_Aug', 'training', 'checkpoints', 'model_final.pth')
     model.load_state_dict(torch.load(model_path)['model'])
