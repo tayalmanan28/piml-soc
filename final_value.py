@@ -14,6 +14,7 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
     x = torch.linspace(x_range[0], x_range[1], resolution)
     y = torch.linspace(y_range[0], y_range[1], resolution)
     X, Y = torch.meshgrid(x, y, indexing='ij')
+    z_opt = 1000
     
     Z = torch.zeros_like(X)  # To store z-values for the mesh grid
     dataset = []
@@ -25,11 +26,11 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
                 traj_coord = torch.cat(
                     (traj_time.to('cuda'), torch.Tensor([X[i, j], Y[i, j]]).to('cuda'), z.unsqueeze(0).to('cuda')), dim=-1
                 ).reshape(1, 4)
-                
-                V_hat = policy(
-                    {'coords': dynamics.coord_to_input(traj_coord.cuda())})
-                values = dynamics.io_to_value(V_hat['model_in'].detach(),
-                                              V_hat['model_out'].squeeze(dim=-1).detach())
+                with torch.no_grad():
+                    V_hat = policy(
+                        {'coords': dynamics.coord_to_input(traj_coord.cuda())})
+                    values = dynamics.io_to_value(V_hat['model_in'].detach(),
+                                                V_hat['model_out'].squeeze(dim=-1).detach())
                 if values <= 0:
                     z_min_list.append(z.item())
             
@@ -38,14 +39,20 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
                 z_min_list.sort()
                 Z[i, j] = z_min_list[0]
             else:
-                Z[i, j] = 10  # Handle cases where no valid z-value exists
-            
+                Z[i, j] = 12  # Handle cases where no valid z-value exists
+
+            if Z[i, j] <= z_opt:
+                z_opt = Z[i,j]
+
+            print(i,j)
             dataset.append([X[i, j].item(), Y[i, j].item(), Z[i, j].item()])
 
     # Save dataset to CSV
-    # df = pd.DataFrame(dataset, columns=['X', 'Y', 'Z'])
-    # df.to_csv("dataset.csv", index=False)
-    # print(f"Dataset saved")
+    df = pd.DataFrame(dataset, columns=['X', 'Y', 'Z'])
+    df.to_csv("dataset.csv", index=False)
+    print(f"Dataset saved")
+
+    print("Optimal Z:", z_opt)
     
     # Convert to numpy for plotting
     X_np = X.detach().cpu().numpy()
@@ -67,7 +74,7 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
     plt.title('2D Heatmap of Z')
     plt.savefig("final_V_heatmap.png", dpi=1200)
     # plt.show()
-    
+
     # Plot the 3D mesh-grid
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(projection='3d')
@@ -80,20 +87,20 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
     # plt.show()
 
 if __name__ == "__main__":
-    resolution = 100  # Resolution for the mesh grid
+    resolution = 200  # Resolution for the mesh grid
     x_range = [-3, 2]
     y_range = [-2, 2]
-    z_range = torch.Tensor([0, 6])
+    z_range = torch.Tensor([0, 9.84])
 
     times = torch.Tensor([2.0])
     dyn = Boat2DAug()
 
     model = modules.SingleBVPNet(
         in_features=dyn.input_dim, out_features=1, type='sine', mode='mlp',
-        final_layer_factor=1., hidden_features=512, num_hidden_layers=3
+        final_layer_factor=1., hidden_features=256, num_hidden_layers=3
     )
-    model_path = os.path.join('runs/Boat2DAug_512nl', 'training', 'checkpoints', 'model_final.pth')
+    model_path = os.path.join('runs/Boat2DAug_256', 'training', 'checkpoints', 'model_final.pth')
     model.load_state_dict(torch.load(model_path)['model'])
     model.cuda()
 
-    opt_value_func_mesh(model, dyn, times, x_range, y_range, z_range, resolution, num_z=50)
+    opt_value_func_mesh(model, dyn, times, x_range, y_range, z_range, resolution, num_z=70)
