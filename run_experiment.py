@@ -12,6 +12,7 @@ from datetime import datetime
 from dynamics import dynamics
 from experiments import experiments
 from utils import modules, dataio, losses
+from dynamics import load_class
 
 p = configargparse.ArgumentParser()
 p.add_argument('-c', '--config_filepath', required=False,
@@ -148,9 +149,10 @@ if (mode == 'all') or (mode == 'train'):
     # load dynamics_class choices dynamically from dynamics module
     dynamics_classes_dict = {name: clss for name, clss in inspect.getmembers(
         dynamics, inspect.isclass) if clss.__bases__[0] == dynamics.Dynamics}
-    p.add_argument('--dynamics_class', type=str, required=True,
-                   choices=dynamics_classes_dict.keys(), help='Dynamics class to use.')
+    p.add_argument('--dynamics_class', type=str, required=True, help='Dynamics class to use.')
+    
     # load special dynamics_class arguments dynamically from chosen dynamics class
+    # dynamics_class = load_class("Boat2DAug")
     dynamics_class = dynamics_classes_dict[p.parse_known_args()[
         0].dynamics_class]
     dynamics_params = {name: param for name, param in inspect.signature(
@@ -230,6 +232,7 @@ random.seed(orig_opt.seed)
 np.random.seed(orig_opt.seed)
 
 dynamics_class = getattr(dynamics, orig_opt.dynamics_class)
+# dynamics = load_class(orig_opt.dynamics_class)
 dynamics = dynamics_class(**{argname: getattr(orig_opt, argname)
                           for argname in inspect.signature(dynamics_class).parameters.keys() if argname != 'self'})
 

@@ -469,8 +469,8 @@ class Boat2DAug(Dynamics):
         super().__init__(
             loss_type='brt_aug_hjivi', set_mode="avoid",
             state_dim=3, input_dim=4, control_dim=2, disturbance_dim=0,
-            state_mean=[-0.5, 0, 5],
-            state_var=[2.5, 2, 5.1],
+            state_mean=[-0.5, 0, 7.5],
+            state_var=[2.5, 2, 7.6],
             value_mean=0.5,
             value_var=1,
             value_normto=0.02,
@@ -482,7 +482,7 @@ class Boat2DAug(Dynamics):
         return [
             [-3, 2],
             [-2, 2],
-            [-0.1, 10.1],
+            [-0.1, 15.1],
         ]
 
     def equivalent_wrapped_state(self, state):
@@ -511,12 +511,12 @@ class Boat2DAug(Dynamics):
         dp1 = state[..., 0:2]*1.0
         dp1[..., 0] = dp1[..., 0]-(-0.5)
         dp1[..., 1] = dp1[..., 1]-(0.5)
-        dist1 = torch.norm(dp1[..., 0:2], float('inf'), dim=-1) -0.4 
+        dist1 = torch.norm(dp1[..., 0:2], dim=-1) -0.4 
 
         dp2 = state[..., 0:2]*1.0
         dp2[..., 0] = dp2[..., 0]-(-1)
         dp2[..., 1] = 0.2*(dp2[..., 1]-(-1.5))
-        dist2 = torch.norm(dp2[..., 0:2], float('inf'), dim=-1) - 0.2
+        dist2 = torch.norm(dp2[..., 0:2], dim=-1) - 0.2
 
         dist = self.avoid_fn_weight * (torch.minimum(dist1, dist2))
         return dist#torch.where((dist >= 0), dist*5, dist)
@@ -767,8 +767,8 @@ class Boat2D(Dynamics):
 
 class F1Tenth4DAug(Dynamics):
     def __init__(self):
-        self.beta_max = 0.7
-        self.a_max = 2
+        self.steer_max = 0.7
+        self.a_max = 1
         self.L = 1
         self.avoid_fn_weight = -1
         self.set_mode = 'avoid'
@@ -776,25 +776,25 @@ class F1Tenth4DAug(Dynamics):
         super().__init__(
             loss_type='brt_aug_hjivi', set_mode='avoid',
             state_dim=5, input_dim=6, control_dim=2, disturbance_dim=0,
-            state_mean=[0, 0, 2.5, 0, 5.5],
-            state_var=[3, 3, 2.5, math.pi, 5.6],
+            state_mean=[0, 0, 5, 0, 8.2],
+            state_var=[30, 30, 5, math.pi, 8.3],
             value_mean=0.25,
             value_var=0.5,
             value_normto=0.02,
-            deepReach_model='reg',
+            deepReach_model='exact',
             exact_factor=1.0
         )
 
     def control_range(self, state):
-        return [[-self.a_max, self.a_max], [-self.beta_max, self.beta_max]]
+        return [[-self.a_max, self.a_max], [-self.steer_max, self.steer_max]]
 
     def state_test_range(self):
         return [
-            [-3, 3],
-            [-3, 3],
-            [0, 5],
+            [-30, 30],
+            [-30, 30],
+            [0, 10],
             [-math.pi, math.pi],
-            [-0.1, 11.1]
+            [-0.1, 16.5]
 
         ]
 
@@ -839,27 +839,27 @@ class F1Tenth4DAug(Dynamics):
         # distance between the vehicle and obstacles
         # obstacles (x,y,r): (-2,-1,0.6), (-0.1,0.2,0.5), (-1,1.5,0.9), (1,2.3,0.4), (1.5,0.1,0.9), (0.7,-1.6,0.6), (1,3,0.4)
         dp1 = state[..., 0:2]*1.0
-        dp1[..., 0] = dp1[..., 0]-(-0.5)
-        dp1[..., 1] = dp1[..., 1]-(0.5)
-        dist1 = torch.norm(dp1[..., 0:2], float('inf'), dim=-1) -0.4 
+        dp1[..., 0] = dp1[..., 0]-(-5)
+        dp1[..., 1] = dp1[..., 1]-(5)
+        dist1 = torch.norm(dp1[..., 0:2], float('inf'), dim=-1) -4 
 
         dp2 = state[..., 0:2]*1.0
-        dp2[..., 0] = dp2[..., 0]-(-1)
-        dp2[..., 1] = 0.2*(dp2[..., 1]-(-1.5))
-        dist2 = torch.norm(dp2[..., 0:2], float('inf'), dim=-1) - 0.2
+        dp2[..., 0] = dp2[..., 0]-(-10)
+        dp2[..., 1] = 0.2*(dp2[..., 1]-(-15))
+        dist2 = torch.norm(dp2[..., 0:2], float('inf'), dim=-1) - 2
 
         dist = self.avoid_fn_weight * (torch.minimum(dist1, dist2))
         return dist#torch.where((dist >= 0), dist*5, dist)
 
     def boundary_fn(self, state):
-        return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,2])
+        return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,4])
 
     def sample_target_state(self, num_samples):
         raise NotImplementedError
     
     def l_x(self, state):
         dist = state[..., 0:2]*1.0
-        dist[..., 0] = dist[..., 0]-(1.5)
+        dist[..., 0] = dist[..., 0]-(15)
         dist[..., 1] = dist[..., 1]-(0)
         return torch.norm(dist[..., 0:2], dim=-1)
 

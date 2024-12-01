@@ -13,7 +13,7 @@ python run_experiment.py --mode train \
 --minWith target \
 --dirichlet_loss_divisor 0.023 \
 --batch_size 32 \
---lr 0.00002 \
+--lr 0.00001 \
 --deepReach_model exact \
 --seed 0 \
 --num_nl 256 \
