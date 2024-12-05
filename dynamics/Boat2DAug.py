@@ -15,7 +15,7 @@ class Boat2DAug(Dynamics):
             value_mean=0.5,
             value_var=1,
             value_normto=0.02,
-            deepReach_model='exact',
+            deepReach_model='reg',
             exact_factor=1.0,
         )
 
@@ -81,10 +81,10 @@ class Boat2DAug(Dynamics):
         return - torch.norm(dvds[..., 0:2], dim = -1) - dvds[..., 2]*self.l_x(state) + (2 - 0.5*state[..., 1]*state[..., 1])*dvds[..., 0]
 
     def optimal_control(self, state, dvds):
-        # opt_v =  torch.where((- self.v_max*(torch.norm(dvds[..., 0:2], dim = -1) - dvds[..., 2]) >= 0), 0, self.v_max)
-        # opt_angle = torch.atan2(dvds[..., 1], dvds[..., 0]) + math.pi
-        return NotImplementedError#torch.cat((opt_v, opt_angle), dim=-1)
-
+        opt_u1 = - dvds[..., 0]/torch.norm(dvds[..., 0:2], dim = -1)
+        opt_u2 = - dvds[..., 1]/torch.norm(dvds[..., 0:2], dim = -1)
+        return torch.cat((opt_u1, opt_u2), dim=-1)
+    
     def optimal_disturbance(self, state, dvds):
         return 0
 

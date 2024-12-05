@@ -1,14 +1,13 @@
 import torch
 from tqdm.autonotebook import tqdm
-from dynamics.dynamics import Boat2DAug
+from dynamics.Boat2DAug import Boat2DAug
 import os
 from utils import modules
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.patches import Rectangle, Circle
-from final_value_nn import FeedforwardNN
+from matplotlib.patches import Rectangle, Circle, Ellipse
 
-def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 10, tMin = 0):
+def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 2, tMin = 0):
     policy = model
     state_trajs = torch.zeros(1, int(
         (tMax-tMin)/dt + 1), dynamics.state_dim)
@@ -32,8 +31,6 @@ def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 10, tMin = 0):
         traj_dvs = dynamics.io_to_dv(
             traj_policy_results['model_in'], traj_policy_results['model_out'].squeeze(dim=-1)).detach()
 
-        # TODO: I do not think there is actually any reason to store these trajs? Could save space by removing these.
-
         ctrl_trajs[:, k] = dynamics.optimal_control(
             traj_coords[:, 1:].cuda(), traj_dvs[..., 1:].cuda())
         dstb_trajs[:, k] = dynamics.optimal_disturbance(
@@ -48,11 +45,12 @@ def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 10, tMin = 0):
 
         state_trajs[:, k+1] = next_state_
         pbar_pos +=1
+        values = dynamics.io_to_value(traj_policy_results['model_in'].detach(),
+                                                traj_policy_results['model_out'].squeeze(dim=-1).detach())
+        print(values)
 
     traj = state_trajs[0].T
     x, y, z = traj
-
-    print(z, ctrl_trajs[0])
 
     x = x.to('cpu').detach().numpy()
     y = y.to('cpu').detach().numpy()
@@ -63,27 +61,26 @@ def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 10, tMin = 0):
     plt.xlim(-3, 2)
     plt.ylim(-2, 2)
     currentAxis1 = plt.gca()
-    currentAxis1.add_patch(Rectangle((-0.7, 0.3), 0.4, 0.4, facecolor = 'orange', alpha=1))
+    currentAxis1.add_patch(Circle((-0.5, 0.5), 0.4, facecolor = 'orange', alpha=1))
     currentAxis2 = plt.gca()
-    currentAxis2.add_patch(Rectangle((-1.1, -2), 0.2, 1, facecolor = 'orange', alpha=1))
+    currentAxis2.add_patch(Ellipse((-1, -1.5), 0.4, 2, facecolor = 'orange', alpha=1))
     currentAxis3 = plt.gca()
-    currentAxis3.add_patch(Circle((1.5, 0), 0.25, facecolor = 'cyan', alpha=1))
+    currentAxis3.add_patch(Circle((1.5, 0), 0.025, facecolor = 'cyan', alpha=1))
     plt.scatter(x, y, s=1)
     plt.savefig("traj_plot.png",dpi=1200)    
     plt.show()    
 
-
-
 if __name__ =="__main__":
 
     dyn = Boat2DAug()
+    print("Yoo")
 
-    model = FeedforwardNN(in_features=2, out_features=1, type='sine', mode='mlp',
-                             final_layer_factor=1., hidden_features=512, num_hidden_layers=3)
-    model_path = os.path.join('runs/Boat2D_s0_Aug', 'training', 'checkpoints', 'model_final.pth')
+    model = modules.SingleBVPNet(in_features=dyn.input_dim, out_features=1, type='sine', mode='mlp',
+                             final_layer_factor=1., hidden_features=256, num_hidden_layers=3)
+    model_path = os.path.join('runs/Boat2DAug_Exact', 'training', 'checkpoints', 'model_final.pth')
     model.load_state_dict(torch.load(model_path)['model'])
     model.cuda()
-    initial_state = torch.Tensor([-2,-1.5, 10]).to('cuda')
+    initial_state = torch.Tensor([-2.78, -0.8, 2]).to('cuda')
     traj_test(model, initial_state, dynamics=dyn)
 
 

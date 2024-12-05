@@ -1,15 +1,15 @@
 python run_experiment.py --mode train \
---experiment_name Boat2DAug_256 \
+--experiment_name Boat2DAug_Exact \
 --wandb_project RSS \
 --wandb_group Boat2D \
---wandb_name Boat2DAug_256 \
+--wandb_name Boat2DAug_Exact \
 --experiment_class DeepReach \
 --dynamics_class Boat2DAug \
 --numpoints 65000 \
 --pretrain \
---pretrain_iters 50000  \
---counter_end 200000 \
---num_epochs 250000 \
+--pretrain_iters 5000  \
+--counter_end 250000 \
+--num_epochs 255000 \
 --minWith target \
 --dirichlet_loss_divisor 0.023 \
 --batch_size 32 \

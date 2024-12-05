@@ -153,17 +153,17 @@ if (mode == 'all') or (mode == 'train'):
     
     # load special dynamics_class arguments dynamically from chosen dynamics class
     # dynamics_class = load_class("Boat2DAug")
-    dynamics_class = dynamics_classes_dict[p.parse_known_args()[
-        0].dynamics_class]
-    dynamics_params = {name: param for name, param in inspect.signature(
-        dynamics_class).parameters.items() if name != 'self'}
-    for param in dynamics_params.keys():
-        if dynamics_params[param].annotation is bool:
-            p.add_argument(
-                '--' + param, type=dynamics_params[param].annotation, default=False, help='special dynamics_class argument')
-        else:
-            p.add_argument(
-                '--' + param, type=dynamics_params[param].annotation, required=True, help='special dynamics_class argument')
+    # dynamics_class = dynamics_classes_dict[p.parse_known_args()[
+    #     0].dynamics_class]
+    # dynamics_params = {name: param for name, param in inspect.signature(
+    #     dynamics_class).parameters.items() if name != 'self'}
+    # for param in dynamics_params.keys():
+    #     if dynamics_params[param].annotation is bool:
+    #         p.add_argument(
+    #             '--' + param, type=dynamics_params[param].annotation, default=False, help='special dynamics_class argument')
+    #     else:
+    #         p.add_argument(
+    #             '--' + param, type=dynamics_params[param].annotation, required=True, help='special dynamics_class argument')
 
 if (mode == 'all') or (mode == 'test'):
     p.add_argument('--dt', type=float, default=0.0025,
@@ -231,10 +231,11 @@ torch.manual_seed(orig_opt.seed)
 random.seed(orig_opt.seed)
 np.random.seed(orig_opt.seed)
 
-dynamics_class = getattr(dynamics, orig_opt.dynamics_class)
-# dynamics = load_class(orig_opt.dynamics_class)
-dynamics = dynamics_class(**{argname: getattr(orig_opt, argname)
-                          for argname in inspect.signature(dynamics_class).parameters.keys() if argname != 'self'})
+# dynamics_class = getattr(dynamics, orig_opt.dynamics_class)
+dyn_class = load_class(orig_opt.dynamics_class)
+dynamics = dyn_class()
+# dynamics = dynamics_class(**{argname: getattr(orig_opt, argname)
+#                           for argname in inspect.signature(dynamics_class).parameters.keys() if argname != 'self'})
 
 dynamics.set_model(orig_opt.deepReach_model)
 dataset = dataio.ReachabilityDataset(

@@ -1,5 +1,5 @@
 import torch
-from dynamics.dynamics import Boat2DAug
+from dynamics.Boat2DAug import Boat2DAug
 import os
 from utils import modules
 import matplotlib.pyplot as plt
@@ -31,7 +31,7 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
                         {'coords': dynamics.coord_to_input(traj_coord.cuda())})
                     values = dynamics.io_to_value(V_hat['model_in'].detach(),
                                                 V_hat['model_out'].squeeze(dim=-1).detach())
-                if values <= 0:
+                if values <= 0:#-0.1:
                     z_min_list.append(z.item())
             
             # Find the minimum z-value for the current (x, y)
@@ -39,7 +39,7 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
                 z_min_list.sort()
                 Z[i, j] = z_min_list[0]
             else:
-                Z[i, j] = 12  # Handle cases where no valid z-value exists
+                Z[i, j] = 20  # Handle cases where no valid z-value exists
 
             if Z[i, j] <= z_opt:
                 z_opt = Z[i,j]
@@ -88,9 +88,9 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
 
 if __name__ == "__main__":
     resolution = 200  # Resolution for the mesh grid
-    x_range = [-3, 2]
-    y_range = [-2, 2]
-    z_range = torch.Tensor([0, 9.84])
+    x_range = [-3,2]#[-2.78, -2.78] 
+    y_range = [-2,2]#[1.0, 1.0]
+    z_range = torch.Tensor([0, 14.76])
 
     times = torch.Tensor([2.0])
     dyn = Boat2DAug()
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         in_features=dyn.input_dim, out_features=1, type='sine', mode='mlp',
         final_layer_factor=1., hidden_features=256, num_hidden_layers=3
     )
-    model_path = os.path.join('runs/Boat2DAug_256', 'training', 'checkpoints', 'model_final.pth')
+    model_path = os.path.join('runs/Boat2DAug_512nl', 'training', 'checkpoints', 'model_final.pth')
     model.load_state_dict(torch.load(model_path)['model'])
     model.cuda()
 
-    opt_value_func_mesh(model, dyn, times, x_range, y_range, z_range, resolution, num_z=70)
+    opt_value_func_mesh(model, dyn, times, x_range, y_range, z_range, resolution, num_z=250)
