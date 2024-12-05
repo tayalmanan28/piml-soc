@@ -6,7 +6,7 @@ import math
 import torch.nn.functional as F
 
 class BCNetwork(nn.Module):
-    def __init__(self, input_dim=4, num_nl=64):
+    def __init__(self, input_dim=3, num_nl=64):
         super(BCNetwork, self).__init__()
         self.fc1 = nn.Linear(input_dim, num_nl)
 
@@ -15,11 +15,13 @@ class BCNetwork(nn.Module):
         self.fc3 = nn.Linear(num_nl, num_nl)
 
         self.fc4 = nn.Linear(num_nl, 1)
+        self.softplus = torch.nn.Softplus()
+        self.elu = torch.nn.ELU(alpha = 1)
 
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = torch.relu(self.fc3(x))
+        x = self.elu(self.fc1(x)) # torch.relu(self.fc1(x))
+        x = self.elu(self.fc2(x)) # torch.relu(self.fc2(x))
+        x = self.elu(self.fc3(x)) # torch.relu(self.fc3(x))
         x = self.fc4(x)
         return x.squeeze(-1)
 

@@ -1,6 +1,7 @@
 from .dynamics import Dynamics
 import torch
 import math
+from utils.modules import BCNetwork
 
 class Boat2DAug(Dynamics):
     def __init__(self):
@@ -10,20 +11,27 @@ class Boat2DAug(Dynamics):
         super().__init__(
             loss_type='brt_aug_hjivi', set_mode="avoid",
             state_dim=3, input_dim=4, control_dim=2, disturbance_dim=0,
-            state_mean=[-0.5, 0, 7.5],
-            state_var=[2.5, 2, 7.6],
+            state_mean=[-0.5, 0, 7.38],
+            state_var=[2.5, 2.0, 7.48],#[3.125, 2.5, 7.48],
             value_mean=0.5,
             value_var=1,
             value_normto=0.02,
-            deepReach_model='reg',
+            deepReach_model='exact',
             exact_factor=1.0,
         )
+        self.BCNN = BCNetwork()
+        self.BCNN.load_state_dict(
+                        torch.load('Boat_gx.pth', map_location='cpu'))
+        self.BCNN.eval()
+        self.BCNN.cuda()
+        for param in self.BCNN.parameters():
+            param.requires_grad = False
 
     def state_test_range(self):
         return [
-            [-3, 2],
-            [-2, 2],
-            [-0.1, 15.1],
+            [-3, 2],#[-3.625, 2.625],
+            [-2, 2],#[-2.5, 2.5],
+            [-0.1, 14.86],
         ]
 
     def equivalent_wrapped_state(self, state):
@@ -63,7 +71,11 @@ class Boat2DAug(Dynamics):
         return dist#torch.where((dist >= 0), dist*5, dist)
 
     def boundary_fn(self, state):
-        return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,2])
+        # return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,2])
+        # computed using NN
+        device=state.device
+        lx=self.BCNN(state.cuda()).to(device)
+        return lx
 
     def sample_target_state(self, num_samples):
         raise NotImplementedError

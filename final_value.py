@@ -87,7 +87,7 @@ def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, r
     # plt.show()
 
 if __name__ == "__main__":
-    resolution = 200  # Resolution for the mesh grid
+    resolution = 70  # Resolution for the mesh grid
     x_range = [-3,2]#[-2.78, -2.78] 
     y_range = [-2,2]#[1.0, 1.0]
     z_range = torch.Tensor([0, 14.76])
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         in_features=dyn.input_dim, out_features=1, type='sine', mode='mlp',
         final_layer_factor=1., hidden_features=256, num_hidden_layers=3
     )
-    model_path = os.path.join('runs/Boat2DAug_512nl', 'training', 'checkpoints', 'model_final.pth')
+    model_path = os.path.join('runs/Boat2DAug_ext_BC_1', 'training', 'checkpoints', 'model_final.pth')
     model.load_state_dict(torch.load(model_path)['model'])
     model.cuda()
 
-    opt_value_func_mesh(model, dyn, times, x_range, y_range, z_range, resolution, num_z=250)
+    opt_value_func_mesh(model, dyn, times, x_range, y_range, z_range, resolution, num_z=210)
