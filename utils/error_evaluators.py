@@ -235,6 +235,7 @@ def scenario_optimization(model,  dynamics, tMin, tMax, dt, set_type, control_ty
 
         state_trajs[:, 0, :] = batch_scenario_states
         for k in tqdm(range(int((tMax-tMin)/dt)), desc='Trajectory Propagation', position=pbar_pos, leave=False):
+            
             if control_type == 'value':
                 traj_time = tMax - k*dt
                 traj_times = torch.full((scenario_batch_size, ), traj_time)
@@ -250,9 +251,7 @@ def scenario_optimization(model,  dynamics, tMin, tMax, dt, set_type, control_ty
                 {'coords': dynamics.coord_to_input(traj_coords.cuda())})
             traj_dvs = dynamics.io_to_dv(
                 traj_policy_results['model_in'], traj_policy_results['model_out'].squeeze(dim=-1)).detach()
-
-            # TODO: I do not think there is actually any reason to store these trajs? Could save space by removing these.
-
+            
             ctrl_trajs[:, k] = dynamics.optimal_control(
                 traj_coords[:, 1:].cuda(), traj_dvs[..., 1:].cuda())
             dstb_trajs[:, k] = dynamics.optimal_disturbance(
@@ -271,9 +270,6 @@ def scenario_optimization(model,  dynamics, tMin, tMax, dt, set_type, control_ty
                 ) + dt*dynamics.dsdt(state_trajs[:, k].cuda(), ctrl_trajs[:, k].cuda(), dstb_trajs[:, k].cuda()))
                 next_state_ = torch.clamp(next_state_, torch.tensor(dynamics.state_test_range(
                 )).cuda()[..., 0], torch.tensor(dynamics.state_test_range()).cuda()[..., 1])
-                switching_mask = next_state_[..., 0] >= (0.6)
-                next_state_[..., 0][switching_mask] = -0.2
-                next_state_[..., 1][switching_mask] = next_state_[..., 1][switching_mask] * torch.cos(torch.tensor(0.8))
 
                 state_trajs[:, k+1] = next_state_
         # print("Detecting NaNs")

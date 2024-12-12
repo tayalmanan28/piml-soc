@@ -9,10 +9,10 @@ class Boat2DAug(Dynamics):
         self.avoid_fn_weight = -1
         self.v_max = 1
         super().__init__(
-            loss_type='brt_aug_hjivi', set_mode="avoid",
+            loss_type='brt_aug_hjivi', set_mode="reach",
             state_dim=3, input_dim=4, control_dim=2, disturbance_dim=0,
             state_mean=[-0.5, 0, 7.38],
-            state_var=[2.5, 2.0, 7.48],#[3.125, 2.5, 7.48],
+            state_var=[2.5, 2.0, 7.48],#[3.125, 2.5, 7.48],#
             value_mean=0.5,
             value_var=1,
             value_normto=0.02,
@@ -21,7 +21,7 @@ class Boat2DAug(Dynamics):
         )
         self.BCNN = BCNetwork()
         self.BCNN.load_state_dict(
-                        torch.load('Boat_gx.pth', map_location='cpu'))
+                        torch.load('Boat2D/Boat_gx.pth', map_location='cpu'))
         self.BCNN.eval()
         self.BCNN.cuda()
         for param in self.BCNN.parameters():
@@ -29,8 +29,8 @@ class Boat2DAug(Dynamics):
 
     def state_test_range(self):
         return [
-            [-3, 2],#[-3.625, 2.625],
-            [-2, 2],#[-2.5, 2.5],
+            [-3, 2],#[-3.625, 2.625],#
+            [-2, 2],#[-2.5  , 2.5  ],#
             [-0.1, 14.86],
         ]
 
@@ -71,11 +71,11 @@ class Boat2DAug(Dynamics):
         return dist#torch.where((dist >= 0), dist*5, dist)
 
     def boundary_fn(self, state):
-        # return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,2])
+        return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,2]) #self.avoid_fn(state)#
         # computed using NN
-        device=state.device
-        lx=self.BCNN(state.cuda()).to(device)
-        return lx
+        # device=state.device
+        # lx=self.BCNN(state.cuda()).to(device)
+        # return lx
 
     def sample_target_state(self, num_samples):
         raise NotImplementedError
@@ -87,7 +87,7 @@ class Boat2DAug(Dynamics):
         return torch.norm(dist[..., 0:2], dim=-1) -self.goalR
 
     def cost_fn(self, state_traj):
-        return torch.min(self.boundary_fn(state_traj), dim=-1).values
+        return torch.max(self.boundary_fn(state_traj), dim=-1).values
 
     def hamiltonian(self, state, dvds):
         return - torch.norm(dvds[..., 0:2], dim = -1) - dvds[..., 2]*self.l_x(state) + (2 - 0.5*state[..., 1]*state[..., 1])*dvds[..., 0]
@@ -95,7 +95,7 @@ class Boat2DAug(Dynamics):
     def optimal_control(self, state, dvds):
         opt_u1 = - dvds[..., 0]/torch.norm(dvds[..., 0:2], dim = -1)
         opt_u2 = - dvds[..., 1]/torch.norm(dvds[..., 0:2], dim = -1)
-        return torch.cat((opt_u1, opt_u2), dim=-1)
+        return torch.cat((opt_u1[..., None], opt_u2[..., None]), dim=-1)
     
     def optimal_disturbance(self, state, dvds):
         return 0

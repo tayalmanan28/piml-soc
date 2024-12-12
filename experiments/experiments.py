@@ -780,6 +780,7 @@ class Experiment(ABC):
                 sns.set_style('whitegrid')
                 costs_ = results['costs'].cpu().numpy()
                 values_ = results['values'].cpu().numpy()
+                # print(results)
                 unsafe_cost_safe_value_indeces = np.argwhere(
                     np.logical_and(costs_ > 0, values_ <= 0))
 
@@ -791,6 +792,7 @@ class Experiment(ABC):
                 delta_level_min = np.min(
                     values_[unsafe_cost_safe_value_indeces])
                 print("delta_level_min: ", delta_level_min)
+                # print(costs_[unsafe_cost_safe_value_indeces], values_[unsafe_cost_safe_value_indeces])
                 # for each delta level, determine (1) the corresponding volume;
                 # (2) k and and corresponding epsilon
                 ks = []
@@ -804,6 +806,7 @@ class Experiment(ABC):
                     volume = values_[values_ <= delta_level_].shape[0]/N
                     ks.append(k)
                     epsilons.append(eps)
+                    print("epsilon:",eps, "Delta Level:", delta_level_, "No. of Outliers:", k)
                     volumes.append(volume)
                 # plot epsilon volume graph
                 fig1, ax1 = plt.subplots()

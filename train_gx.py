@@ -11,8 +11,8 @@ if __name__ =="__main__":
 
     num_samples = 100
 
-    xs = torch.linspace(-3.625, 2.625, num_samples)
-    ys = torch.linspace(-2.5, 2.5, num_samples)
+    xs = torch.linspace(-3, 2, num_samples)
+    ys = torch.linspace(-2, 2, num_samples)
     zs = torch.linspace(-0.1, 14.86, num_samples)
     coords = torch.cartesian_prod(xs, ys, zs)
 
@@ -28,7 +28,7 @@ if __name__ =="__main__":
     lx = lx.cuda().float()
     num_epochs = 10000
     state_mean=torch.tensor([-0.5, 0.0, 7.38])
-    state_var=torch.tensor([3.125, 2.5, 7.48])
+    state_var=torch.tensor([2.5, 2.0, 7.48])
 
     for epoch in range(num_epochs):#tqdm(range(num_epochs), position=0, desc="batch", leave=False, colour='green', ncols=80):
         model.train()
