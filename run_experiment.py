@@ -26,10 +26,10 @@ p.add_argument('--experiments_dir', type=str, default='./runs',
 p.add_argument('--experiment_name', type=str, required=True,
                help='Name of the experient subdirectory.')
 p.add_argument('--wandb_project', type=str,
-               required=True, help='wandb project')
-p.add_argument('--wandb_group', type=str, required=True, help='wandb group')
+               required=False, help='wandb project')
+p.add_argument('--wandb_group', type=str, required=False, help='wandb group')
 p.add_argument('--wandb_name', type=str,
-               required=True, help='name of wandb run')
+               required=False, help='name of wandb run')
 
 mode = p.parse_known_args()[0].mode
 

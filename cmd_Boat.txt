@@ -1,8 +1,8 @@
 python run_experiment.py --mode train \
---experiment_name Boat2DAug_ext_BC \
+--experiment_name Boat2DAug_BC \
 --wandb_project RSS \
 --wandb_group Boat2D \
---wandb_name Boat2DAug_ext_BC \
+--wandb_name Boat2DAug_BC \
 --experiment_class DeepReach \
 --dynamics_class Boat2DAug \
 --numpoints 100000 \

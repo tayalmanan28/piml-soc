@@ -16,7 +16,7 @@ class Boat2DAug(Dynamics):
             value_mean=0.5,
             value_var=1,
             value_normto=0.02,
-            deepReach_model='exact',
+            deepReach_model='reg',
             exact_factor=1.0,
         )
         self.BCNN = BCNetwork()
@@ -60,12 +60,12 @@ class Boat2DAug(Dynamics):
         dp1 = state[..., 0:2]*1.0
         dp1[..., 0] = dp1[..., 0]-(-0.5)
         dp1[..., 1] = dp1[..., 1]-(0.5)
-        dist1 = torch.norm(dp1[..., 0:2], float('inf'), dim=-1) -0.4 
+        dist1 = torch.norm(dp1[..., 0:2], float('inf'), dim=-1) -0.4  #
 
         dp2 = state[..., 0:2]*1.0
         dp2[..., 0] = dp2[..., 0]-(-1)
         dp2[..., 1] = 0.2*(dp2[..., 1]-(-1.5))
-        dist2 = torch.norm(dp2[..., 0:2], float('inf'), dim=-1) - 0.2
+        dist2 = torch.norm(dp2[..., 0:2], float('inf'), dim=-1) - 0.2 # , float('inf')
 
         dist = self.avoid_fn_weight * (torch.minimum(dist1, dist2))
         return dist#torch.where((dist >= 0), dist*5, dist)
