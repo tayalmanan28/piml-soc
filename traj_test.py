@@ -7,7 +7,7 @@ from utils import modules
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Rectangle, Circle, Ellipse
-from final_value import opt_value_func_mesh as opt_value
+from final_value_Boat2D import opt_value_func_mesh as opt_value
 
 def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 2, tMin = 0):
     policy = model

@@ -2,6 +2,7 @@ import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 import math
+from final_value import opt_value_func_mesh as opt_value
 
 
 class Validator(ABC):
@@ -350,6 +351,236 @@ def scenario_optimization(model,  dynamics, tMin, tMax, dt, set_type, control_ty
         'maxed_scenarios': (max_scenarios is not None) and num_scenarios >= max_scenarios,
         'maxed_samples': (max_samples is not None) and num_samples >= max_samples,
         'maxed_violations': (max_violations is not None) and num_violations >= max_violations,
+        'batch_state_trajs': None if (max_samples and (num_samples >= max_samples)) else state_trajs,
+    }
+
+def performance_scenario_optimization(model,  dynamics, tMin, tMax, dt, set_type, control_type, scenario_batch_size, sample_batch_size, sample_generator, sample_validator, delta =0, max_scenarios=None, max_samples=None, max_violations=None, tStart_generator=None):
+    policy = model
+    rem = ((tMax-tMin) / dt) % 1
+    e_tol = 1e-12
+    assert rem < e_tol or 1 - \
+        rem < e_tol, f'{tMax-tMin} is not divisible by {dt}'
+    assert tMax > tMin
+    assert set_type in ['BRS', 'BRT']
+    if set_type == 'BRS':
+        print('confirm correct calculation of true values of trajectories (batch_scenario_costs)')
+        raise NotImplementedError
+    assert control_type in ['value', 'ttr', 'init_ttr']
+    assert max_scenarios or max_samples or max_violations, 'one of the termination conditions must be used'
+    if max_scenarios:
+        assert (max_scenarios /
+                scenario_batch_size) % 1 == 0, 'max_scenarios is not divisible by scenario_batch_size'
+    if max_samples:
+        assert (
+            max_samples / sample_batch_size) % 1 == 0, 'max_samples is not divisible by sample_batch_size'
+
+    # accumulate scenarios
+    times = torch.zeros(0, )
+    states = torch.zeros(0, dynamics.state_dim)
+    values = torch.zeros(0, )
+    costs = torch.zeros(0, )
+    init_hams = torch.zeros(0, )
+    mean_hams = torch.zeros(0, )
+    mean_abs_hams = torch.zeros(0, )
+    max_abs_hams = torch.zeros(0, )
+    min_abs_hams = torch.zeros(0, )
+
+    num_scenarios = 0
+    num_samples = 0
+    num_violations = 0
+
+    pbar_pos = 0
+    if max_scenarios:
+        scenarios_pbar = tqdm(total=max_scenarios,
+                              desc='Scenarios', position=pbar_pos)
+        pbar_pos += 1
+    if max_samples:
+        samples_pbar = tqdm(total=max_samples,
+                            desc='Samples', position=pbar_pos)
+        pbar_pos += 1
+    if max_violations:
+        violations_pbar = tqdm(total=max_violations,
+                               desc='Violations', position=pbar_pos)
+        pbar_pos += 1
+
+    nums_valid_samples = []
+    while True:
+        if (max_scenarios and (num_scenarios >= max_scenarios)) or (max_violations and (num_violations >= max_violations)):
+            break
+
+        batch_scenario_times = torch.zeros(scenario_batch_size, )
+        batch_scenario_states = torch.zeros(
+            scenario_batch_size, dynamics.state_dim)
+        batch_scenario_values = torch.zeros(scenario_batch_size, )
+
+        num_collected_scenarios = 0
+        while num_collected_scenarios < scenario_batch_size:
+            if max_samples and (num_samples >= max_samples):
+                break
+            # sample batch
+            if tStart_generator is not None:
+                batch_sample_times = tStart_generator(sample_batch_size)
+                # need to round to nearest dt
+                batch_sample_times = torch.round(batch_sample_times/dt)*dt
+            else:
+                batch_sample_times = torch.full((sample_batch_size, ), tMax)
+            batch_sample_states = dynamics.equivalent_wrapped_state(
+                sample_generator.sample(sample_batch_size))
+            batch_sample_coords = torch.cat(
+                (batch_sample_times.unsqueeze(-1), batch_sample_states), dim=-1)
+
+            # validate batch
+            with torch.no_grad():
+                batch_sample_model_results = model(
+                    {'coords': dynamics.coord_to_input(batch_sample_coords.cuda())})
+                batch_sample_values = dynamics.io_to_value(batch_sample_model_results['model_in'].detach(
+                ), batch_sample_model_results['model_out'].squeeze(dim=-1).detach())
+            batch_valid_sample_idxs = torch.where(sample_validator.validate(
+                batch_sample_coords, batch_sample_values))[0].detach().cpu()
+
+            # store valid samples
+            num_valid_samples = len(batch_valid_sample_idxs)
+            start_idx = num_collected_scenarios
+            end_idx = min(start_idx + num_valid_samples, scenario_batch_size)
+            batch_scenario_times[start_idx:end_idx] = batch_sample_times[batch_valid_sample_idxs][:end_idx-start_idx]
+            batch_scenario_states[start_idx:end_idx] = batch_sample_states[batch_valid_sample_idxs][:end_idx-start_idx]
+            batch_scenario_values[start_idx:end_idx] = batch_sample_values[batch_valid_sample_idxs][:end_idx-start_idx]
+
+            for i in range(len(batch_scenario_states)): #range(0,1): #
+                z = batch_scenario_states[i][-1]
+                act_states = batch_scenario_states[i][0:-1]
+                z_range = dynamics.state_test_range()
+                z_range = z_range[-1]
+                # print(z_range)
+
+                Z = opt_value(model, dynamics, torch.Tensor([tMax]), act_states, z_range, resolution=1, num_z=210, delta=delta)
+                batch_scenario_states[i][-1] = Z
+                # print("Optimal Z", Z)
+
+            # update counters
+            num_samples += sample_batch_size
+            if max_samples:
+                samples_pbar.update(sample_batch_size)
+            num_collected_scenarios += end_idx - start_idx
+            nums_valid_samples.append(num_valid_samples)
+        if max_samples and (num_samples >= max_samples):
+            break
+
+        # propagate scenarios
+        state_trajs = torch.zeros(scenario_batch_size, int(
+            (tMax-tMin)/dt + 1), dynamics.state_dim)
+        ctrl_trajs = torch.zeros(scenario_batch_size, int(
+            (tMax-tMin)/dt), dynamics.control_dim)
+        dstb_trajs = torch.zeros(scenario_batch_size, int(
+            (tMax-tMin)/dt), dynamics.disturbance_dim)
+        ham_trajs = torch.zeros(scenario_batch_size, int((tMax-tMin)/dt))
+
+        state_trajs[:, 0, :] = batch_scenario_states
+        z_cost = torch.zeros(scenario_batch_size)
+        for k in tqdm(range(int((tMax-tMin)/dt)), desc='Trajectory Propagation', position=pbar_pos, leave=False):
+            
+            if control_type == 'value':
+                traj_time = tMax - k*dt
+                traj_times = torch.full((scenario_batch_size, ), traj_time)
+            
+            # Calculating the actual z cost on the traj
+            # print(dynamics.l_x(state_trajs[:, k]).shape, z_cost.shape)
+            z_cost = z_cost + dynamics.l_x(state_trajs[:, k])*dt
+
+            traj_coords = torch.cat(
+                (traj_times.unsqueeze(-1), state_trajs[:, k]), dim=-1)
+            traj_policy_results = policy(
+                {'coords': dynamics.coord_to_input(traj_coords.cuda())})
+            traj_dvs = dynamics.io_to_dv(
+                traj_policy_results['model_in'], traj_policy_results['model_out'].squeeze(dim=-1)).detach()
+            
+            ctrl_trajs[:, k] = dynamics.optimal_control(
+                traj_coords[:, 1:].cuda(), traj_dvs[..., 1:].cuda())
+            dstb_trajs[:, k] = dynamics.optimal_disturbance(
+                traj_coords[:, 1:].cuda(), traj_dvs[..., 1:].cuda())
+            ham_trajs[:, k] = dynamics.hamiltonian(
+                traj_coords[:, 1:].cuda(), traj_dvs[..., 1:].cuda())
+
+            if tStart_generator is not None:  # freeze states whose start time has not been reached yet
+                is_frozen = batch_scenario_times < traj_times
+                is_unfrozen = torch.logical_not(is_frozen)
+                state_trajs[is_frozen, k+1] = state_trajs[is_frozen, k]
+                state_trajs[is_unfrozen, k+1] = dynamics.equivalent_wrapped_state(state_trajs[is_unfrozen, k].cuda() + dt*dynamics.dsdt(
+                    state_trajs[is_unfrozen, k].cuda(), ctrl_trajs[is_unfrozen, k].cuda(), dstb_trajs[is_unfrozen, k].cuda())).cpu()
+            else:
+                next_state_ = dynamics.equivalent_wrapped_state(state_trajs[:, k].cuda(
+                ) + dt*dynamics.dsdt(state_trajs[:, k].cuda(), ctrl_trajs[:, k].cuda(), dstb_trajs[:, k].cuda()))
+                next_state_ = torch.clamp(next_state_, torch.tensor(dynamics.state_test_range(
+                )).cuda()[..., 0], torch.tensor(dynamics.state_test_range()).cuda()[..., 1])
+
+                state_trajs[:, k+1] = next_state_
+                if (traj_time <= dt):
+                    z_cost = z_cost + dynamics.l_x(state_trajs[:, k+1])
+        # print("Detecting NaNs")
+        # if torch.isnan(state_trajs).any():
+        #     print("Nan detected!")
+        # compute batch_scenario_costs
+
+        act_z_cost = batch_scenario_states[:, -1]
+
+        # To eliminate failure cases
+        condition = act_z_cost == 50
+        # print(act_z_cost.shape, z_cost.shape, condition, condition.dtype)
+        z_cost = torch.where(condition, act_z_cost, z_cost)
+
+        batch_scenario_costs = torch.abs(z_cost - act_z_cost)
+
+        # compute batch_scenario_init_hams, batch_scenario_mean_hams, batch_scenario_mean_abs_hams, batch_scenario_max_abs_hams, batch_scenario_min_abs_hams
+        batch_scenario_init_hams = ham_trajs[:, 0]
+        batch_scenario_mean_hams = torch.mean(ham_trajs, dim=-1)
+        batch_scenario_mean_abs_hams = torch.mean(torch.abs(ham_trajs), dim=-1)
+        batch_scenario_max_abs_hams = torch.max(
+            torch.abs(ham_trajs), dim=-1).values
+        batch_scenario_min_abs_hams = torch.min(
+            torch.abs(ham_trajs), dim=-1).values
+
+        # store scenarios
+        times = torch.cat((times, batch_scenario_times.cpu()), dim=0)
+        states = torch.cat((states, batch_scenario_states.cpu()), dim=0)
+        values = torch.cat((values, batch_scenario_values.cpu()), dim=0)
+        costs = torch.cat((costs, batch_scenario_costs.cpu()), dim=0)
+        init_hams = torch.cat(
+            (init_hams, batch_scenario_init_hams.cpu()), dim=0)
+        mean_hams = torch.cat(
+            (mean_hams, batch_scenario_mean_hams.cpu()), dim=0)
+        mean_abs_hams = torch.cat(
+            (mean_abs_hams, batch_scenario_mean_abs_hams.cpu()), dim=0)
+        max_abs_hams = torch.cat(
+            (max_abs_hams, batch_scenario_max_abs_hams.cpu()), dim=0)
+        min_abs_hams = torch.cat(
+            (min_abs_hams, batch_scenario_min_abs_hams.cpu()), dim=0)
+
+        # update counters
+        num_scenarios += scenario_batch_size
+        if max_scenarios:
+            scenarios_pbar.update(scenario_batch_size)
+
+    if max_scenarios:
+        scenarios_pbar.close()
+    if max_samples:
+        samples_pbar.close()
+    if max_violations:
+        violations_pbar.close()
+
+    return {
+        'times': times,
+        'states': states,
+        'values': values,
+        'costs': costs,
+        'init_hams': init_hams,
+        'init_abs_hams': torch.abs(init_hams),
+        'mean_hams': mean_hams,
+        'mean_abs_hams': mean_abs_hams,
+        'max_abs_hams': max_abs_hams,
+        'min_abs_hams': min_abs_hams,
+        'valid_sample_fraction': torch.mean(torch.tensor(nums_valid_samples, dtype=float))/sample_batch_size,
+        'maxed_scenarios': (max_scenarios is not None) and num_scenarios >= max_scenarios,
+        'maxed_samples': (max_samples is not None) and num_samples >= max_samples,
         'batch_state_trajs': None if (max_samples and (num_samples >= max_samples)) else state_trajs,
     }
 

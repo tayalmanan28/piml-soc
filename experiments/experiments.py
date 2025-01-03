@@ -19,7 +19,7 @@ from collections import OrderedDict
 from datetime import datetime
 from sklearn import svm
 from utils import diff_operators
-from utils.error_evaluators import scenario_optimization, ValueThresholdValidator, MultiValidator, MLPConditionedValidator, target_fraction, MLP, MLPValidator, SliceSampleGenerator
+from utils.error_evaluators import performance_scenario_optimization, scenario_optimization, ValueThresholdValidator, MultiValidator, MLPConditionedValidator, target_fraction, MLP, MLPValidator, SliceSampleGenerator
 import seaborn as sns
 from scipy.stats import beta as beta__dist
 
@@ -827,6 +827,74 @@ class Experiment(ABC):
                 plt.title("beta_=1e-10, N =3e6")
                 fig1.savefig(os.path.join(
                     testing_dir, f'robust_verification_results.png'), dpi=800)
+                plt.close(fig1)
+
+            if data_step == 'run_perf_recovery':
+                logs = {}
+
+                # rollout samples all over the state space
+                beta_ = 1e-10
+                N = 300000
+
+                logs['beta_'] = beta_
+                logs['N'] = N
+
+                delta = -0.03
+
+                results = performance_scenario_optimization(
+                    model=model, dynamics=dynamics,
+                    tMin=dataset.tMin, tMax=dataset.tMax, dt=dt,
+                    set_type=set_type, control_type=control_type,
+                    scenario_batch_size=min(N, 100000), sample_batch_size=10*min(N, 10000),
+                    sample_generator=SliceSampleGenerator(
+                        dynamics=dynamics, slices=[None]*dynamics.state_dim),
+                    sample_validator=ValueThresholdValidator(v_min=float(
+                        '-inf'), v_max=delta) if dynamics.set_mode == 'reach' else ValueThresholdValidator(v_min=delta,
+                        v_max=float('inf')),
+                    delta = delta,
+                    max_scenarios=N, max_samples=1000*min(N, 10000))
+
+                sns.set_style('whitegrid')
+                costs_ = results['costs'].cpu().numpy()
+                # print(costs_)
+                values_ = results['values'].cpu().numpy()
+                psi_level_max = np.max(costs_)
+                print("psi_level_max: ", psi_level_max)
+
+                ks = []
+                epsilons = []
+                volumes = []
+
+                unsafe_k = int(np.argwhere(costs_ == 0).shape[0])
+                print("Unsafe Volume:", unsafe_k/N)
+
+                for psi_level_ in np.arange(0, psi_level_max, abs(psi_level_max/100)):
+                    k = int(np.argwhere(costs_ >= psi_level_).shape[0])
+                    eps = beta__dist.ppf(beta_,  N-k, k+1)
+                    volume = 0# costs_[costs_ <= delta_level_].shape[0]/N
+                    ks.append(k)
+                    epsilons.append(eps)
+                    print("epsilon:",eps, "Psi Level:", psi_level_, "No. of Outliers:", k)
+                    volumes.append(volume)
+                # plot epsilon volume graph
+                fig1, ax1 = plt.subplots()
+                color = 'tab:red'
+                ax1.set_xlabel('volumes')
+                ax1.set_ylabel('epsilons', color=color)
+                ax1.plot(volumes, epsilons, color=color)
+                ax1.tick_params(axis='y', labelcolor=color)
+
+                ax2 = ax1.twinx()
+
+                color = 'tab:blue'
+                ax2.set_ylabel('number of outliers', color=color)
+                ax2.plot(volumes, ks, color=color)
+                ax2.tick_params(axis='y', labelcolor=color)
+
+                # fig1.tight_layout()  # otherwise the right y-label is slightly clipped
+                plt.title("beta_=1e-10, N =3e6")
+                fig1.savefig(os.path.join(
+                    testing_dir, f'performance_verification_results.png'), dpi=800)
                 plt.close(fig1)
 
             if data_step == 'run_basic_recovery':

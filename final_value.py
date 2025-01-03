@@ -1,94 +1,91 @@
 import torch
-from dynamics.Boat2DAug import Boat2DAug
+# from dynamics.Boat2DAug import Boat2DAug
 import os
 from utils import modules
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-def opt_value_func_mesh(model, dynamics, traj_time, x_range, y_range, z_range, resolution, num_z, plot_flag= False):
+def opt_value_func_mesh(model, dynamics, traj_time, act_state, z_range, resolution, num_z, delta, plot_flag= False):
     policy = model.eval()
     z_list = torch.linspace(z_range[0], z_range[1], num_z)
     
-    # Create mesh grid for x and y
-    x = torch.linspace(x_range[0], x_range[1], resolution)
-    y = torch.linspace(y_range[0], y_range[1], resolution)
-    X, Y = torch.meshgrid(x, y, indexing='ij')
     z_opt = 1000
-    
-    Z = torch.zeros_like(X)  # To store z-values for the mesh grid
     dataset = []
-    delta = -0.05#-0.038
+    # delta = -0.05#-0.03
     
     for i in range(resolution):
         for j in range(resolution):
-            z_min_list = []
-            for z in z_list:
-                traj_coord = torch.cat(
-                    (traj_time.to('cuda'), torch.Tensor([X[i, j], Y[i, j]]).to('cuda'), z.unsqueeze(0).to('cuda')), dim=-1
-                ).reshape(1, 4)
-                with torch.no_grad():
-                    V_hat = policy(
-                        {'coords': dynamics.coord_to_input(traj_coord.cuda())})
-                    values = dynamics.io_to_value(V_hat['model_in'].detach(),
-                                                V_hat['model_out'].squeeze(dim=-1).detach())
-                if values <= delta:
-                    z_min_list.append(z.item())
-                # print(z.item(), values)
+            # Binary search to find the minimum z such that value <= delta
+            low, high = 0, len(z_list) - 1
+            z_opt_candidate = None
             
-            # Find the minimum z-value for the current (x, y)
-            if z_min_list:
-                z_min_list.sort()
-                Z[i, j] = z_min_list[0]
+            while low <= high:
+                mid = (low + high) // 2
+                z = z_list[mid]
+                # print(traj_time.shape, act_state.shape, z.unsqueeze(0).shape)
+                # print(dynamics.input_dim)
+                traj_coord = torch.cat(
+                    (traj_time.to('cuda'), torch.Tensor(act_state).to('cuda'), z.unsqueeze(0).to('cuda')), dim=-1
+                ).reshape(1, dynamics.input_dim)
+                with torch.no_grad():
+                    V_hat = policy({'coords': dynamics.coord_to_input(traj_coord.cuda())})
+                    values = dynamics.io_to_value(
+                        V_hat['model_in'].detach(),
+                        V_hat['model_out'].squeeze(dim=-1).detach()
+                    )
+                
+                if values <= delta:
+                    z_opt_candidate = z.item()  # Update candidate
+                    high = mid - 1  # Search the lower half
+                else:
+                    low = mid + 1  # Search the upper half
+            
+            # Update z_opt for the current (i, j) grid point
+            if z_opt_candidate is not None:
+                z_opt = min(z_opt, z_opt_candidate)
             else:
-                Z[i, j] = 20  # Handle cases where no valid z-value exists
-
-            if Z[i, j] <= z_opt:
-                z_opt = Z[i,j]
-
-            if plot_flag == True:
-                print(i,j)
-                dataset.append([X[i, j].item(), Y[i, j].item(), Z[i, j].item()])
+                z_opt = 50  # Handle cases where no valid z-value exists
 
     
 
-    if plot_flag == True:
-        # Save dataset to CSV
-        df = pd.DataFrame(dataset, columns=['X', 'Y', 'Z'])
-        df.to_csv("Boat2D/dataset.csv", index=False)
-        print(f"Dataset saved")
+    # if plot_flag == True:
+    #     # Save dataset to CSV
+    #     df = pd.DataFrame(dataset, columns=['X', 'Y', 'Z'])
+    #     df.to_csv("Boat2D/dataset.csv", index=False)
+    #     print(f"Dataset saved")
         
-        # Convert to numpy for plotting
-        X_np = X.detach().cpu().numpy()
-        Y_np = Y.detach().cpu().numpy()
-        Z_np = Z.detach().cpu().numpy()
+    #     # Convert to numpy for plotting
+    #     X_np = X.detach().cpu().numpy()
+    #     Y_np = Y.detach().cpu().numpy()
+    #     Z_np = Z.detach().cpu().numpy()
 
-        # Plot the 2D heatmap
-        plt.figure(figsize=(10, 8))
-        plt.imshow(
-            Z_np.T,  # Transpose to match the coordinate system of the plot
-            extent=[x_range[0], x_range[1], y_range[0], y_range[1]],
-            origin='lower',
-            cmap='RdYlBu',
-            aspect='auto'
-        )
-        plt.colorbar(label='Z-Value (Optimal)')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.title('2D Heatmap of Z')
-        plt.savefig("Boat2D/final_V_heatmap.png", dpi=1200)
-        # plt.show()
+    #     # Plot the 2D heatmap
+    #     plt.figure(figsize=(10, 8))
+    #     plt.imshow(
+    #         Z_np.T,  # Transpose to match the coordinate system of the plot
+    #         extent=[x_range[0], x_range[1], y_range[0], y_range[1]],
+    #         origin='lower',
+    #         cmap='RdYlBu',
+    #         aspect='auto'
+    #     )
+    #     plt.colorbar(label='Z-Value (Optimal)')
+    #     plt.xlabel('X')
+    #     plt.ylabel('Y')
+    #     plt.title('2D Heatmap of Z')
+    #     plt.savefig("Boat2D/final_V_heatmap.png", dpi=1200)
+    #     # plt.show()
 
-        # Plot the 3D mesh-grid
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(projection='3d')
-        ax.plot_surface(X_np, Y_np, Z_np, cmap='YlOrRd', edgecolor='k', alpha=0.8)
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        ax.set_title('3D Mesh-Grid Plot')
-        plt.savefig("Boat2D/final_V_mesh_plot.png", dpi=1200)
-        # plt.show()
+    #     # Plot the 3D mesh-grid
+    #     fig = plt.figure(figsize=(10, 8))
+    #     ax = fig.add_subplot(projection='3d')
+    #     ax.plot_surface(X_np, Y_np, Z_np, cmap='YlOrRd', edgecolor='k', alpha=0.8)
+    #     ax.set_xlabel('X')
+    #     ax.set_ylabel('Y')
+    #     ax.set_zlabel('Z')
+    #     ax.set_title('3D Mesh-Grid Plot')
+    #     plt.savefig("Boat2D/final_V_mesh_plot.png", dpi=1200)
+    #     # plt.show()
 
     return z_opt
 

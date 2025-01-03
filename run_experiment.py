@@ -177,7 +177,7 @@ if (mode == 'all') or (mode == 'test'):
     p.add_argument('--control_type', type=str, default='value', choices=[
                    'value', 'ttr', 'init_ttr'], help='The controller to use in scenario optimization for testing')
     p.add_argument('--data_step', type=str, default='run_basic_recovery', choices=['plot_violations', 'run_basic_recovery', 'plot_basic_recovery',
-                   'collect_samples', 'train_binner', 'run_binned_recovery', 'plot_binned_recovery', 'plot_cost_function', 'run_robust_recovery'], help='The data processing step to run')
+                   'collect_samples', 'train_binner', 'run_binned_recovery', 'plot_binned_recovery', 'plot_cost_function', 'run_robust_recovery', 'run_perf_recovery'], help='The data processing step to run')
 
 opt = p.parse_args()
 

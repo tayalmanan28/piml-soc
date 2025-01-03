@@ -1,5 +1,5 @@
 python run_experiment.py --mode test \
---experiments_dir ./runs\
+--experiments_dir ./runs \
 --experiment_name Boat2DAug_ext_BC \
 --dt 0.0025 \
 --checkpoint_toload -1 \

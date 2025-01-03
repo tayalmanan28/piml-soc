@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Rectangle, Circle, Ellipse
 from final_value_MVC import opt_value_func_mesh as opt_value
+import math
 
-def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 1, tMin = 0):
+def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 2, tMin = 0):
     policy = model
     state_trajs = torch.zeros(1, int(
         (tMax-tMin)/dt + 1), dynamics.state_dim)
@@ -27,10 +28,12 @@ def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 1, tMin = 0):
     Z = initial_state[9]
     Z = Z.to('cpu').detach().numpy()
     Act_Z = [Z]
+    cost = 0.0
     for k in tqdm(range(int((tMax-tMin)/dt)), desc='Trajectory Propagation', position=pbar_pos, leave=False):
         traj_time = tMax - k*dt
-        traj_time_list.append(1.0-traj_time)
+        traj_time_list.append(2.0-traj_time)
         traj_times = torch.full((1, ), traj_time)
+        cost = cost + dynamics.l_x(state_trajs[:, k])*dt
         
         traj_coords = torch.cat(
             (traj_times.unsqueeze(-1), state_trajs[:, k]), dim=-1)
@@ -50,25 +53,10 @@ def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 1, tMin = 0):
         ) + dt*dynamics.dsdt(state_trajs[:, k].cuda(), ctrl_trajs[:, k].cuda(), dstb_trajs[:, k].cuda()))
         next_state_ = torch.clamp(next_state_, torch.tensor(dynamics.state_test_range(
         )).cuda()[..., 0], torch.tensor(dynamics.state_test_range()).cuda()[..., 1])
-
-        # print(next_state_)
-        
-        
-
-        # if k%100 == 0:
-        #     x_, y_, z_ = next_state_[0]
-        #     x_range_ = [x_, x_]#[-3,2]# 
-        #     y_range_ = [y_, y_]#[-2,2]#
-
-        #     Z = opt_value(model, dyn, times, x_range_, y_range_, z_range, resolution=1, num_z=210)
-        #     Z = Z.to('cpu').detach().numpy()
-            
-        #     # next_state_[0][2] = torch.Tensor(Z).to('cuda')
-        
-        # Act_Z.append(Z)
-
-
         state_trajs[:, k+1] = next_state_
+        if (traj_time <= dt):
+            cost = cost + dynamics.l_x(state_trajs[:, k+1])
+            print("Terminal_Cost", dynamics.l_x(state_trajs[:, k+1]))
         pbar_pos +=1
         # print()
 
@@ -87,14 +75,17 @@ def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 1, tMin = 0):
 
 
     z = z.to('cpu').detach().numpy()
-    print(traj, ctrl_trajs[0].T, x2, y2)
+    # print(traj, ctrl_trajs[0].T, x2, y2)
+    #print(ctrl_trajs[0].T)
+    print(z)
+    print(cost)
 
-    # traj_t = np.array(traj_time_list)
+    #traj_t = np.array(traj_time_list)
     # act_z = np.array(Act_Z)
 
     # plt.figure(1)
 
-    # plt.scatter(traj_t, z, s=0.1)
+    #plt.scatter(traj_t, z, s=0.1)
     # plt.scatter(traj_t, act_z, s=0.1)
     # plt.savefig("MVC9D/z_time_plot.png",dpi=1200) 
 
@@ -107,8 +98,12 @@ def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 1, tMin = 0):
     # currentAxis1.add_patch(Rectangle((-0.9, 0.1), 0.8, 0.8, facecolor = 'orange', alpha=1))
     # currentAxis2 = plt.gca()
     # currentAxis2.add_patch(Rectangle((-1.2, -2.3), 0.4, 2, facecolor = 'orange', alpha=1))
-    # currentAxis3 = plt.gca()
-    # currentAxis3.add_patch(Circle((1.5, 0), 0.025, facecolor = 'cyan', alpha=1))
+    currentAxis1 = plt.gca()
+    currentAxis1.add_patch(Circle((-0.5, 0), 0.1, facecolor = 'cyan', alpha=1))
+    currentAxis2 = plt.gca()
+    currentAxis2.add_patch(Circle((0.5, -0.5), 0.1, facecolor = 'cyan', alpha=1))
+    currentAxis3 = plt.gca()
+    currentAxis3.add_patch(Circle((0.5, 0.5), 0.1, facecolor = 'cyan', alpha=1))
     plt.scatter(x1, y1, s=0.1)
     plt.scatter(x2, y2, s=0.1)
     plt.scatter(x3, y3, s=0.1)
@@ -125,18 +120,21 @@ if __name__ =="__main__":
     model.cuda()
     # initial_state = torch.Tensor([-0.63, -1.21, 2.7809]).to('cuda')
     # traj_test(model, initial_state, dynamics=dyn)
-    times = torch.Tensor([1.0])
+    times = torch.Tensor([2.0])
 
-    states = torch.Tensor(( [-0.3, 0, 0.3,-0.9, 0.3, 0.9, 0, 0, 0, 0.0],
+    states = torch.Tensor(([-0.5, 0.5, 0.0, 0.4, 0.0, -0.4, math.pi, 0.0, 0.0, 0.0],
                         #    [-0.3, 0, 0.3,-0.9, 0.3, 0.9, 0, 0, 0, 0.0],
                             )).to('cuda')
     
     for i in range(len(states)): #range(0,1): #
         x1, y1, x2, y2, x3, y3, th1, th2, th3, z = states[i]
-        z_range = torch.Tensor([0, 2.9])
+        z_range = torch.Tensor([0, 18.1])
 
         Z = opt_value(model, dyn, times, x1, y1, x2, y2, x3, y3, th1, th2, th3, z_range, resolution=1, num_z=210)
+        # Z = 5
         states[i][9] = Z
+        
+        print("Optimal Z", Z)
 
     for i in range(len(states)):
         traj_test(model, states[i], dynamics=dyn)

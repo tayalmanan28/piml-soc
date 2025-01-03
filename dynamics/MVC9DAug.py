@@ -6,15 +6,16 @@ class MVC9DAug(Dynamics):
     def __init__(self):
         self.set_mode = 'reach'
         self.angle_alpha_factor = 1.2
-        self.velocity = 1
+        self.velocity = 0.60
         self.omega_max = 1.1
         self.collisionR = 0.1
+        self.goalR = 0.1
         self.alpha_time = 1.0
-        self.z_mean = 2.8
-        self.z_var = 2.9
-        self.G_1 = [-0.9, 0.0]
-        self.G_2 = [ 0.9,-0.9]
-        self.G_3 = [ 0.9, 0.9]
+        self.z_mean = 2.1
+        self.z_var = 2.2
+        self.G_1 = [-0.5, 0.0]
+        self.G_2 = [ 0.5,-0.5]
+        self.G_3 = [ 0.5, 0.5]
         super().__init__(
             loss_type='brt_aug_hjivi', set_mode=self.set_mode, state_dim=10, input_dim=11, control_dim=3, disturbance_dim=0,
             state_mean=[
@@ -71,83 +72,63 @@ class MVC9DAug(Dynamics):
         dsdt[..., 6] = control[..., 0]
         dsdt[..., 7] = control[..., 1]
         dsdt[..., 8] = control[..., 2]
-        dsdt[..., 9] = - self.l_x(state)
+        dsdt[..., 9] = -self.l_x(state)
         return dsdt
     
     def l_x(self, state): # to be changed
         dist1 = state[..., 0:2]*1.0
         dist1[..., 0] = dist1[..., 0]-(self.G_1[0])
         dist1[..., 1] = dist1[..., 1]-(self.G_1[1])
-        distance_1 = torch.norm(dist1[..., 0:2], dim=-1)
+        distance_1 = torch.norm(dist1[..., 0:2], dim=-1) - self.goalR
 
         dist2 = state[..., 2:4]*1.0
         dist2[..., 0] = dist2[..., 0]-(self.G_2[0])
         dist2[..., 1] = dist2[..., 1]-(self.G_2[1])
-        distance_2 = torch.norm(dist2[..., 0:2], dim=-1)
+        distance_2 = torch.norm(dist2[..., 0:2], dim=-1) - self.goalR
 
         dist3 = state[..., 4:6]*1.0
         dist3[..., 0] = dist3[..., 0]-(self.G_3[0])
         dist3[..., 1] = dist3[..., 1]-(self.G_3[1])
-        distance_3 = torch.norm(dist3[..., 0:2], dim=-1)
+        distance_3 = torch.norm(dist3[..., 0:2], dim=-1) - self.goalR
 
-        return distance_1+ distance_2+ distance_3#torch.maximum(distance_1, torch.maximum(distance_2, distance_3))
+        return (distance_1 + distance_2 + distance_3)/3 #torch.maximum(distance_1, torch.maximum(distance_2, distance_3)) #
 
     def avoid_fn(self, state):
-        boundary_values = -torch.norm(
+        boundary_values_12 = -torch.norm(
             state[..., 0:2] - state[..., 2:4], dim=-1) + self.collisionR
-        for i in range(1, 2):
-            boundary_values_current = -torch.norm(
-                state[..., 0:2] - state[..., 2*(i+1):2*(i+1)+2], dim=-1) + self.collisionR
-            boundary_values = torch.max(
-                boundary_values, boundary_values_current)
-        # Collision cost between the evaders themselves
-        for i in range(2):
-            for j in range(i+1, 2):
-                evader1_coords_index = (i+1)*2
-                evader2_coords_index = (j+1)*2
-                boundary_values_current = -torch.norm(state[..., evader1_coords_index:evader1_coords_index+2] -
-                                                     state[..., evader2_coords_index:evader2_coords_index+2], dim=-1) + self.collisionR
-                boundary_values = torch.max(
-                    boundary_values, boundary_values_current)
+        boundary_values_13 = -torch.norm(
+            state[..., 0:2] - state[..., 4:6], dim=-1) + self.collisionR
+        boundary_values_23 = -torch.norm(
+            state[..., 2:4] - state[..., 4:6], dim=-1) + self.collisionR
+        boundary_values = torch.max(boundary_values_23, torch.max(
+                    boundary_values_12, boundary_values_13))
         return boundary_values
     
     def boundary_fn(self, state):
-        return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,9]) #self.avoid_fn(state)#
-        # computed using NN
-        # device=state.device
-        # lx=self.BCNN(state.cuda()).to(device)
-        # return lx
+        return torch.maximum(self.avoid_fn(state), self.l_x(state) - state[...,9])
 
     def sample_target_state(self, num_samples):
         raise NotImplementedError
 
     def cost_fn(self, state_traj):
-        return torch.min(self.avoid_fn(state_traj), dim=-1).values
+        return torch.max(self.avoid_fn(state_traj), dim=-1).values
 
     def hamiltonian(self, state, dvds):
-        dvds[..., 6:] = dvds[..., 6:] / self.angle_alpha_factor
+        dvds[..., 6:9] = dvds[..., 6:9] / self.angle_alpha_factor
 
         # Compute the hamiltonian for the ego vehicle
         ham = self.velocity*(torch.cos(self.angle_alpha_factor*state[..., 6]) * dvds[..., 0] + torch.sin(
-            self.angle_alpha_factor*state[..., 6]) * dvds[..., 1]) - self.omega_max * torch.abs(dvds[..., 6])
+            self.angle_alpha_factor*state[..., 6]) * dvds[..., 1]) - self.omega_max * torch.abs(dvds[..., 6]) + \
+            self.velocity*(torch.cos(self.angle_alpha_factor*state[..., 7]) * dvds[..., 2] + torch.sin(
+            self.angle_alpha_factor*state[..., 7]) * dvds[..., 3]) - self.omega_max * torch.abs(dvds[..., 7]) + \
+            self.velocity*(torch.cos(self.angle_alpha_factor*state[..., 8]) * dvds[..., 4] + torch.sin(
+            self.angle_alpha_factor*state[..., 8]) * dvds[..., 5]) - self.omega_max * torch.abs(dvds[..., 8]) 
 
-        # Hamiltonian effect due to other vehicles
-        for i in range(2):
-            theta_index = 7+i
-            xcostate_index = 2*(i+1)
-            ycostate_index = 2*(i+1) + 1
-            thetacostate_index = 7+i
-            ham_local = self.velocity*(torch.cos(self.angle_alpha_factor*state[..., theta_index]) * dvds[..., xcostate_index] + torch.sin(
-                self.angle_alpha_factor*state[..., theta_index]) * dvds[..., ycostate_index]) - self.omega_max * torch.abs(dvds[..., thetacostate_index])
-            ham = ham + ham_local
-
-        # Effect of time factor
         ham = ham * self.alpha_time - dvds[..., 9]*self.l_x(state)
         return ham
 
     def optimal_control(self, state, dvds):
-        # dvds[..., 6] = -dvds[..., 6]
-        return self.omega_max*torch.sign(dvds[..., [6, 7, 8]])
+        return -1.0*self.omega_max*torch.sign(dvds[..., [6, 7, 8]])
 
     def optimal_disturbance(self, state, dvds):
         return 0
@@ -156,9 +137,9 @@ class MVC9DAug(Dynamics):
         return {
             'state_slices': [
                 0, 0,
-                -0.4, 0,
-                0.4, 0,
-                math.pi/2, math.pi/4, 3*math.pi/4, self.z_mean
+                0, -0.4,
+                0, 0.4,
+                math.pi/2, 0.0, 0.0, self.z_mean
             ],
             'state_labels': [
                 r'$x_1$', r'$y_1$',

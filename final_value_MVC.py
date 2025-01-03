@@ -28,14 +28,14 @@ def opt_value_func_mesh(model, dynamics, traj_time, x1, y1, x2, y2, x3, y3, th1,
                                                 V_hat['model_out'].squeeze(dim=-1).detach())
                 if values <= delta:
                     z_min_list.append(z.item())
-                print(z.item(), values)
+                # print(z.item(), values)
             
             # Find the minimum z-value for the current (x, y)
             if z_min_list:
                 z_min_list.sort()
                 z_opt = z_min_list[0]
             else:
-                z_opt = 20  # Handle cases where no valid z-value exists
+                z_opt = 80  # Handle cases where no valid z-value exists
     
 
     # if plot_flag == True:
@@ -95,7 +95,6 @@ if __name__ == "__main__":
         resolution = 1  # Resolution for the mesh grid
         x1, y1, x2, y2, x3, y3, th1, th2, th3 = states[i]
         z_range = torch.Tensor([0, 2.9])
-        print(1, x2)
 
         Z = opt_value_func_mesh(model, dyn, times, x1, y1, x2, y2, x3, y3, th1, th2, th3, z_range, resolution, num_z=210)
 

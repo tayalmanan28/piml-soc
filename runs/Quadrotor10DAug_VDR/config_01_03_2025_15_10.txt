@@ -1,0 +1,13 @@
+config_filepath = None
+mode = test
+experiments_dir = ./runs
+experiment_name = Quadrotor10DAug_VDR
+wandb_project = None
+wandb_group = None
+wandb_name = None
+dt = 0.0025
+checkpoint_toload = -1
+num_scenarios = 100000
+num_violations = 1000
+control_type = value
+data_step = run_robust_recovery
