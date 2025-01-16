@@ -144,17 +144,18 @@ if __name__ =="__main__":
                             )).to('cuda')
     
     for i in range(len(states)): #range(0,1): #
-        x1, y1, x2, y2, x3, y3, th1, th2, th3, gx_1, gy_1, gx_2, gy_2, gx_3, gy_3, z = states[i]
+        act_state = states[i][0:15]
+        # print(act_state)
+        
         z_range = torch.Tensor([0, 4.3])
 
-        Z = opt_value(model, dyn, times, x1, y1, x2, y2, x3, y3, th1, th2, th3, gx_1, gy_1, gx_2, gy_2, gx_3, gy_3, z_range, resolution=1, num_z=210)
+        Z = opt_value(model, dyn, times, act_state, z_range, resolution=1, num_z=210, delta=-0.115)
+
         states[i][15] = Z
         print("Optimal Z", Z)
 
     for i in range(len(states)):
         traj_test(model, states[i], dynamics=dyn)
-
-
 
 # Point 1 [0.0, 0.0, 0.5, 0.3, 0.5, -0.3, math.pi, -math.pi/3, 2*math.pi/3, -0.3, 0.0, 0.51,-0.4,0.49, 0.4, 0.0]
 # Point 2 [0.0, 0.0, 0.0,-0.4, 0.0, 0.4, math.pi, 0.0, 0.0, -0.3, 0.0, 0.51,-0.4,0.49, 0.4, 0.0]

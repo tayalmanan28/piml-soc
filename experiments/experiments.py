@@ -839,7 +839,7 @@ class Experiment(ABC):
                 logs['beta_'] = beta_
                 logs['N'] = N
 
-                delta = -0.03
+                delta = -0.61
 
                 results = performance_scenario_optimization(
                     model=model, dynamics=dynamics,

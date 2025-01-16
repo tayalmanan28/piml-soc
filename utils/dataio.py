@@ -146,3 +146,58 @@ class ReachabilityDataset(Dataset):
             return {'model_coords': model_coords}, {'boundary_values': boundary_values, 'reach_values': reach_values, 'avoid_values': avoid_values, 'dirichlet_masks': dirichlet_masks}
         else:
             raise NotImplementedError
+
+
+class ReachabilityDatasetRejSamp(Dataset):
+    def __init__(self, dynamics, numpoints, model, tMin, tMax, counter_start, counter_end, num_src_samples, num_target_samples):
+        self.dynamics = dynamics
+        self.numpoints = numpoints
+        self.model = model
+        self.pretrain = False
+        self.tMin = tMin
+        self.tMax = tMax
+        self.counter = counter_start
+        self.counter_end = counter_end
+        self.num_src_samples = num_src_samples
+        self.num_target_samples = num_target_samples
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, idx):
+        # uniformly sample domain and include coordinates where source is non-zero
+        model_states = torch.zeros(
+            self.numpoints, self.dynamics.state_dim).uniform_(-1, 1)
+        
+        policy = self.model
+        
+        times = self.tMin + torch.zeros(self.numpoints, 1).uniform_(
+            0, (self.tMax-self.tMin) * min(self.counter / self.counter_end, 1.0))
+        # make sure we always have training samples at the initial time
+        if self.dynamics.deepReach_model in ["reg","diff"]:
+            times[-self.num_src_samples:, 0] = self.tMin
+
+        model_coords = torch.cat((times, model_states), dim=1).cuda()
+
+        with torch.no_grad():
+            V_hat = policy({'coords': self.dynamics.coord_to_input(model_coords)})
+            values = self.dynamics.io_to_value(
+                V_hat['model_in'].detach(),
+                V_hat['model_out'].squeeze(dim=-1).detach()
+            )
+            outputs = values # Squeeze to get 1D tensor if output is single-dim
+            mask = (outputs > -0.1) & (outputs < 0.1)
+            selected_coords = model_coords[mask].cpu()
+
+        model_coords = model_coords.cpu()
+
+        boundary_values = self.dynamics.boundary_fn(
+            self.dynamics.input_to_coord(selected_coords)[..., 1:])
+
+        dirichlet_masks = (selected_coords[:, 0] == self.tMin)
+
+        self.counter += 1
+        
+        if self.dynamics.loss_type == 'brt_aug_hjivi':
+            return {'model_coords': selected_coords}, {'boundary_values': boundary_values, 'dirichlet_masks': dirichlet_masks}
+        else:
+            raise NotImplementedError

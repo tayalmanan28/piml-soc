@@ -199,8 +199,10 @@ if (mode == 'all') or (mode == 'train'):
         # if not (overwrite == 'y'):
         #     print('Exiting.')
         #     quit()
-        shutil.rmtree(experiment_dir)
-    os.makedirs(experiment_dir)
+        # shutil.rmtree(experiment_dir)
+        print("The directory already exists!")
+    else:
+        os.makedirs(experiment_dir)
 elif mode == 'test':
     # confirm that experiment dir already exists
     if not os.path.exists(experiment_dir):
@@ -261,6 +263,12 @@ if orig_opt.pretrained_model != "none":
             if name == 'net.net.4.0.weight' or name == 'net.net.4.0.bias':
                 param.requires_grad = True
             print(name, param.requires_grad)
+
+    dataset = dataio.ReachabilityDatasetRejSamp(
+        dynamics=dynamics, numpoints=orig_opt.numpoints, model = model,
+        tMin=orig_opt.tMin, tMax=orig_opt.tMax,
+        counter_start=orig_opt.counter_start, counter_end=orig_opt.counter_end,
+        num_src_samples=orig_opt.num_src_samples, num_target_samples=orig_opt.num_target_samples)
 
 model.cuda()
 

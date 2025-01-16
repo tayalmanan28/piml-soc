@@ -2,6 +2,9 @@ from .dynamics import Dynamics
 import torch
 import math
 from utils.modules import BCNetwork
+import os
+import numpy as np
+from utils import modules
 
 class Boat2DAug(Dynamics):
     def __init__(self):
@@ -88,6 +91,13 @@ class Boat2DAug(Dynamics):
 
     def cost_fn(self, state_traj):
         return torch.max(self.boundary_fn(state_traj), dim=-1).values
+    
+    def rejection_sampling(self):
+        model = modules.SingleBVPNet(in_features=self.input_dim, out_features=1, type='sine', mode='mlp',
+                             final_layer_factor=1., hidden_features=256, num_hidden_layers=3)
+        model_path = os.path.join('runs/Boat2DAug_VDR', 'training', 'checkpoints', 'model_final.pth')
+
+        return model, model_path
 
     def hamiltonian(self, state, dvds):
         return - torch.norm(dvds[..., 0:2], dim = -1) - dvds[..., 2]*self.l_x(state) + (2 - 0.5*state[..., 1]*state[..., 1])*dvds[..., 0]
