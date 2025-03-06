@@ -1,6 +1,6 @@
 python run_experiment.py --mode test \
 --experiments_dir ./runs \
---experiment_name Track7DAug_VDR \
+--experiment_name Track8DAug \
 --dt 0.0025 \
 --checkpoint_toload -1 \
 --num_scenarios 100000 \

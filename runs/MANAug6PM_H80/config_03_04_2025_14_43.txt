@@ -1,0 +1,16 @@
+config_filepath = None
+mode = test
+experiments_dir = ./runs
+experiment_name = MANAug6PM_H80
+use_wandb = False
+wandb_project = deepreach_mpc
+wandb_entity = YOUR_WANDB_ENTITY
+wandb_group = test_group
+wandb_name = test_run
+dt = 0.0025
+checkpoint_toload = -1
+num_scenarios = 100000
+num_violations = 1000
+control_type = value
+data_step = run_robust_recovery
+gt_data_path = none

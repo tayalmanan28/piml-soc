@@ -1,166 +1,99 @@
-import numpy as np
+import torch
+import time
 import matplotlib.pyplot as plt
-
-# Dynamics of the 2D boat
-def boat_dynamics(x, u1, u2, dt):
-    x1_dot = u1 + 2 - 0.5 * x[1] ** 2
-    x2_dot = u2#np.sqrt(1-u1*u1)
-    return x + dt * np.array([x1_dot, x2_dot])
-
-# Cost function
-def compute_cost(x, goal, obstacles, u1, u2):
-    # Distance to the goal
-    goal_cost = np.linalg.norm(x - goal)
-
-    u_cost = 0# np.linalg.norm(np.array([u1, u2])) -1
-
-    # Obstacle cost
-    obstacle_cost = 0
-    for obs in obstacles:
-        obs1 = max(0.4 - np.linalg.norm(x - obs["center"], np.inf), 0)
-        obs2 = max(0.2 - max(abs(x[0] - obs["rect_center"][0]), (1/5) * abs(x[1] - obs["rect_center"][1])), 0)
-        obstacle_cost += obs1 + obs2
-
-    return 1*goal_cost + 10*obstacle_cost + 100*u_cost
-
-# MPPI controller
-def mppi_controller(x0, goal, obstacles, num_samples=100, horizon=50, dt=0.025, lam=0.010):
-    # Initialize control samples
-    u1s = np.random.uniform(-1, 1, (num_samples, horizon))
-    u2s = np.random.uniform(-1, 1, (num_samples, horizon))
-    # thetas = np.random.uniform(-np.pi, np.pi, (num_samples, horizon))
-
-    # Initialize costs
-    costs = np.zeros(num_samples)
-
-    # Simulate trajectories and compute costs
-    for i in range(num_samples):
-        x = x0.copy()
-        cost = 0
-        for t in range(horizon):
-            u1 = u1s[i, t]
-            u2 = u2s[i, t]
-            x = boat_dynamics(x, u1, u2, dt)
-            cost += compute_cost(x, goal, obstacles, u1, u2)
-        costs[i] = cost
-
-    # Compute weights
-    min_cost = np.min(costs)
-    weights = np.exp(-lam * (costs - min_cost))
-    weights /= np.sum(weights)
-
-    # Compute optimal control
-    optimal_u1 = np.sum(u1s.T * weights, axis=1)
-    optimal_u2 = np.sum(u2s.T * weights, axis=1)
-    return optimal_u1[0], optimal_u2[0]  # Return the first control input
-
-# Simulation parameters
-state_space = [(-3, 2), (-2, 2)]
-v = 1.0
-dt = 0.025
-x_goal = np.array([1.5, 0])
-obstacles = [
-    {"center": np.array([-0.5, 0.5]), "rect_center": np.array([-1, -1.5])}
-]
-
-# Random initial state
-# x0 = np.array([
-#     np.random.uniform(state_space[0][0], state_space[0][1]),
-#     np.random.uniform(state_space[1][0], state_space[1][1])
-# ])
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import Rectangle, Circle, Ellipse
+import math
+import pandas as pd
+import numpy as np
+from mppi_utils import *
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+start_time = time.time()
 
 
-start_positions =  [np.array([-2.44,-1.157]),
-                    np.array([-2.20, 1.890]),
-                    np.array([-1.33, 1.510]),
-                    np.array([ 0.69, 1.100]),
-                    np.array([-1.93, 0.060]),
-                    np.array([-2.33,-0.520]),
-                    np.array([0.068, 0.870]),
-                    np.array([-0.52,-0.140]),
-                    np.array([-0.63,-1.210]),
-                    np.array([-2.58, 0.770])]
+
+def mppi_cost_func(x, u, goal, obs, device):
+    goalX, goalY, goalR = goal
+    obs1_x, obs1_y, obs1_r = obs[0]
+    obs2_x, obs2_y, obs2_r = obs[1]
+    cost = torch.zeros(x.shape[0])
+    x1 = x[:, :, 0]
+    x2 = x[:, :, 1]
+    goal_distance = torch.sqrt((x1 - goalX)**2 + (x2 - goalY)**2)
+    obs1_distance = signed_distance_to_circle(x, torch.tensor([obs1_x, obs1_y, obs1_r]), device)
+    obs2_distance = signed_distance_to_circle(x, torch.tensor([obs2_x, obs2_y, obs2_r]), device)
+    obs_distance = torch.max(obs1_distance, obs2_distance)
+
+    cost = goal_distance + 1e12 * obs_distance
+    # print(cost.shape)
+    cost = torch.sum(cost, dim=1)
+    return cost
+
+def dynamics(x, u, device):
+    dx = torch.zeros_like(x, device=device)
+    dx[:, 0] = u[:, 0] + 2 - 0.5 * x[:, 1] ** 2
+    dx[:, 1] = u[:, 1]
+    return dx
+
+def running_cost(x, goal, device):
+    goalX, goalY, goalR = goal
+    x = x.to('cpu').detach()
+    goal_dist = math.sqrt((x[0,0] - goalX)**2 + (x[0, 1] - goalY)**2)
+    # print(x, goal_dist)
+    return torch.Tensor([goal_dist]).to(device)
+
+def obs_cost(current_x, obs, device):
+    obs1_distance=0.4 - math.sqrt((current_x[0,0] - (-0.5))**2 + (current_x[0, 1] - (0.5))**2)
+    obs2_distance=0.5 - math.sqrt((current_x[0,0] - (-1))**2 + (current_x[0, 1] - (-1.2))**2)
     
-#[np.array([-2, -1]), np.array([-1, 1]), np.array([0, 0]), np.array([1, -1]), np.array([1.5, 1.5])]
-trajectories = []
+    obs_distance = max(0.0,obs1_distance, obs2_distance)
 
-for start in start_positions:
-    trajectory = [start]
-    x = start.copy()
+    return torch.Tensor([obs_distance]).to(device)
 
-    num_steps = 800
-    for _ in range(num_steps):
-        u1, u2 = mppi_controller(x, x_goal, obstacles, num_samples=100, horizon=50, dt=dt)
-        x = boat_dynamics(x, u1, u2, dt)
-        trajectory.append(x)
-        
-        # Check if goal is reached
-        if np.linalg.norm(x - x_goal) < 0.1:
-            print("Goal reached!")
-            # break
+if __name__ =="__main__":
+    file_path = "plots/Boat2D/Traj_points.csv"
+    dt = 0.0025
+    horizon = 2
+    total_time_steps = int(horizon / dt)
+    planning_horizon = 20
+    num_rollouts = 800
+    softmax_lambda = 200.0
+    goal = [1.5, 0, 0.25]
+    obstacles = [[-0.5, 0.5, 0.4], [-1, -1.2, 0.5]]
 
-    print(len(trajectory))
-    trajectories.append(np.array(trajectory))
+    # Load rollout points
+    rollout_points = csv_to_tensor(file_path)[0:2].to(device).T
+    rollout_points = torch.Tensor(( 
+                            [-2.07,-1.43],
+                            [-2.58, 0.670]
+                            )).to('cuda')
+    rollout_costs = torch.zeros(rollout_points.shape[0], device=device)
+    for i in range(rollout_points.shape[0]):
+        print(f"Rollout {i+1} of {rollout_points.shape[0]}")        
+        x0 = rollout_points[i, :].reshape(1, 2)
+        rollout_cost, trajectory, _ = run_batch_mppi(device, x0, dynamics, mppi_cost_func, running_cost, obs_cost, total_time_steps, num_rollouts, planning_horizon, dt, goal, obstacles, softmax_lambda)
+        rollout_costs[i] = rollout_cost.item()
 
+        x, y = trajectory.T
+        x = x.to('cpu').detach().numpy()
+        y = y.to('cpu').detach().numpy()
 
-plt.figure(figsize=(8, 8))
-for idx, traj in enumerate(trajectories):
-    plt.plot(traj[:, 0], traj[:, 1], label=f"Start: {start_positions[idx]}")
+        # plt.figure(1)
+        # plt.xlim(-3, 2)
+        # plt.ylim(-2, 2)
+        # plt.title("MPPI Trajectories")
+        # currentAxis1 = plt.gca()
+        # currentAxis2 = plt.gca()
+        # currentAxis3 = plt.gca()
+        # currentAxis1.add_patch(Circle((-0.5, 0.5), 0.4, facecolor = 'orange', alpha=1))
+        # currentAxis2.add_patch(Circle((-1.0,-1.2), 0.5, facecolor = 'orange', alpha=1))
+        # currentAxis3.add_patch(Circle(( 1.5, 0.0), 0.025, facecolor = 'cyan', alpha=1))
+        # plt.scatter(x, y, s=1)
+        # plt.savefig("plots/Boat2D/mppi.png",dpi=1200) 
+        # pd.DataFrame(x).to_csv('plots/Boat2D/mppi_traj_x'+str(i)+'.csv', index=False, header=["x"])
+        # pd.DataFrame(y).to_csv('plots/Boat2D/mppi_traj_y'+str(i)+'.csv', index=False, header=["y"])
 
-# Add goal
-plt.scatter(x_goal[0], x_goal[1], color='red', label='Goal', marker='*', s=150)
-
-# Add obstacles
-obs1 = plt.Rectangle((-0.9, 0.1), 0.8, 0.8, color='orange', alpha=0.3, label='Obstacle 1')
-obs2 = plt.Rectangle((-1.2, -2.3), 0.4, 2, color='orange', alpha=0.3, label='Obstacle 2')
-plt.gca().add_patch(obs1)
-plt.gca().add_patch(obs2)
-
-plt.title("MPPI Controller")
-plt.xlim(state_space[0])
-plt.ylim(state_space[1])
-plt.xlabel('x1')
-plt.ylabel('x2')
-# plt.title('Trajectories with Obstacles')
-plt.savefig("Boat2D/mppi_traj_plot.png",dpi=1200)  
-plt.legend()
-# plt.grid()
-plt.show()
-
-# x0 = np.array([-2.20, 1.890])
-
-# # Simulation
-# x_traj = [x0]
-# x = x0.copy()
-# num_steps = 100
-# for _ in range(num_steps):
-#     theta = mppi_controller(x, x_goal, v, obstacles, num_samples=100, horizon=25, dt=dt)
-#     x = boat_dynamics(x, v, theta, dt)
-#     x_traj.append(x)
-    
-#     # Check if goal is reached
-#     if np.linalg.norm(x - x_goal) < 0.1:
-#         print("Goal reached!")
-#         break
-
-# # Visualization
-# x_traj = np.array(x_traj)
-# plt.figure(figsize=(8, 6))
-# plt.plot(x_traj[:, 0], x_traj[:, 1], label="Trajectory")
-# plt.scatter(x_goal[0], x_goal[1], color="green", label="Goal")
-
-# # Plot obstacles
-# obs1 = plt.Rectangle((-0.9, 0.1), 0.8, 0.8, color='orange', alpha=0.3, label='Obstacle 1')
-# obs2 = plt.Rectangle((-1.2, -2.3), 0.4, 2, color='orange', alpha=0.3, label='Obstacle 2')
-# plt.gca().add_patch(obs1)
-# plt.gca().add_patch(obs2)
-
-# plt.xlim(state_space[0])
-# plt.ylim(state_space[1])
-# plt.xlabel("x1")
-# plt.ylabel("x2")
-# plt.legend()
-# plt.title("2D Boat MPPI Controller")
-# # plt.grid()
-# plt.show()
-
+    rollout_costs = rollout_costs.cpu()
+    # Convert tensors to NumPy and save to CSV
+    pd.DataFrame(rollout_costs.numpy()).to_csv('plots/Boat2D/rollout_costs.csv', index=False, header=["rollout_costs"])
+    print(f"Time taken is {time.time() - start_time:.2f} seconds")

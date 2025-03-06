@@ -1,0 +1,21 @@
+python run_experiment.py --mode train \
+--experiment_name MANAug6 \
+--wandb_project RSS \
+--wandb_group MANAug6 \
+--wandb_name MANAug6 \
+--experiment_class DeepReach \
+--dynamics_class MANAug6 \
+--numpoints 65000 \
+--pretrain \
+--pretrain_iters 60000  \
+--counter_end 400000 \
+--num_epochs 460000 \
+--minWith target \
+--dirichlet_loss_divisor 0.023 \
+--batch_size 32 \
+--lr 0.00001 \
+--deepReach_model reg \
+--seed 0 \
+--num_nl 256 \
+--tMax 1.0 \
+--val_time_resolution 5

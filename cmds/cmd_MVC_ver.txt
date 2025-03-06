@@ -1,9 +1,0 @@
-python run_experiment.py --mode test \
---experiments_dir ./runs \
---experiment_name MVC9DAug_VDR \
---dt 0.0025 \
---checkpoint_toload -1 \
---num_scenarios 100000 \
---num_violations 1000 \
---control_type value \
---data_step run_robust_recovery
