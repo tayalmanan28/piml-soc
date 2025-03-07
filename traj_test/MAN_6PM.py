@@ -5,7 +5,7 @@ import os
 from dynamics.MANAug6PM import MANAug6PM
 from utils import modules
 from final_value import opt_value_func_mesh as opt_value
-from animation.anim_MAN import animate_trajectories
+from utils.animation.anim_MAN import animate_trajectories
 
 init_points = []
 actual_cost = []
@@ -99,7 +99,7 @@ if __name__ =="__main__":
     dyn = MANAug6PM()
     model = modules.SingleBVPNet(in_features=dyn.input_dim, out_features=1, type='sine', mode='mlp',
                              final_layer_factor=1., hidden_features=256, num_hidden_layers=3)
-    model_path = os.path.join('runs/MANAug6PM_H80', 'training', 'checkpoints', 'model_final.pth')
+    model_path = os.path.join('runs/MANAug6PM', 'training', 'checkpoints', 'model_final.pth')
     model.load_state_dict(torch.load(model_path)['model'])
     model.cuda()
     times = torch.Tensor([2.0])
@@ -111,7 +111,7 @@ if __name__ =="__main__":
     for i in range(len(states)):
         act_state = states[i][0:24]        
         z_range = torch.Tensor([0, 4.3])
-        Z = opt_value(model, dyn, times, act_state, z_range, resolution=1, num_z=210, delta=-0.219)
+        Z = opt_value(model, dyn, times, act_state, z_range, resolution=1, num_z=210, delta=-0.096)
         states[i][24] = Z
         print("Optimal Z", Z)
         traj_test(model, states[i], dynamics=dyn, traj_num=i)

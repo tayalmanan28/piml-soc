@@ -1,10 +1,10 @@
 python run_experiment.py --mode train \
---experiment_name MANAug6 \
+--experiment_name MANAug6PM \
 --wandb_project RSS \
---wandb_group MANAug6 \
---wandb_name MANAug6 \
+--wandb_group MANAug6PM \
+--wandb_name MANAug6PM \
 --experiment_class DeepReach \
---dynamics_class MANAug6 \
+--dynamics_class MANAug6PM \
 --numpoints 65000 \
 --pretrain \
 --pretrain_iters 60000  \

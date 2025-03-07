@@ -208,25 +208,31 @@ class MANAug6PM(Dynamics):
         return torch.max(self.avoid_fn(state_traj), dim=-1).values
 
     def hamiltonian(self, state, dvds):
-        # Compute the hamiltonian for the ego vehicle
-        ham =-self.velocity*(torch.abs(dvds[..., 0]) + \
-                             torch.abs(dvds[..., 1]) + \
-                             torch.abs(dvds[..., 2]) + \
-                             torch.abs(dvds[..., 3]) + \
-                             torch.abs(dvds[..., 4]) + \
-                             torch.abs(dvds[..., 5]) + \
-                             torch.abs(dvds[..., 6]) + \
-                             torch.abs(dvds[..., 7]) + \
-                             torch.abs(dvds[..., 8]) + \
-                             torch.abs(dvds[..., 9]) + \
-                             torch.abs(dvds[..., 10]) + \
-                             torch.abs(dvds[..., 11])) 
+        ham = -self.velocity*(torch.norm(dvds[..., 0:2], dim = -1) + \
+                              torch.norm(dvds[..., 2:4], dim = -1) + \
+                              torch.norm(dvds[..., 4:6], dim = -1) + \
+                              torch.norm(dvds[..., 6:8], dim = -1) + \
+                              torch.norm(dvds[..., 8:10], dim = -1)+ \
+                              torch.norm(dvds[..., 10:12], dim = -1))
 
         ham = ham - dvds[..., 24]*self.l_x(state)
         return ham
 
     def optimal_control(self, state, dvds):
-        return -1.0*self.velocity*torch.sign(dvds[..., [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
+        opt_u11 = - dvds[..., 0]/torch.norm(dvds[..., 0:2], dim = -1)
+        opt_u12 = - dvds[..., 1]/torch.norm(dvds[..., 0:2], dim = -1)
+        opt_u21 = - dvds[..., 2]/torch.norm(dvds[..., 2:4], dim = -1)
+        opt_u22 = - dvds[..., 3]/torch.norm(dvds[..., 2:4], dim = -1)
+        opt_u31 = - dvds[..., 4]/torch.norm(dvds[..., 4:6], dim = -1)
+        opt_u32 = - dvds[..., 5]/torch.norm(dvds[..., 4:6], dim = -1)
+        opt_u41 = - dvds[..., 6]/torch.norm(dvds[..., 6:8], dim = -1)
+        opt_u42 = - dvds[..., 7]/torch.norm(dvds[..., 6:8], dim = -1)
+        opt_u51 = - dvds[..., 8]/torch.norm(dvds[..., 8:10], dim = -1)
+        opt_u52 = - dvds[..., 9]/torch.norm(dvds[..., 8:10], dim = -1)
+        opt_u61 = - dvds[..., 10]/torch.norm(dvds[..., 10:12], dim = -1)
+        opt_u62 = - dvds[..., 11]/torch.norm(dvds[..., 10:12], dim = -1)
+        return torch.cat((opt_u11[..., None], opt_u12[..., None], opt_u21[..., None], opt_u22[..., None], opt_u31[..., None], opt_u32[..., None], 
+                          opt_u41[..., None], opt_u42[..., None], opt_u51[..., None], opt_u52[..., None], opt_u61[..., None], opt_u62[..., None]), dim=-1)
 
     def optimal_disturbance(self, state, dvds):
         return 0

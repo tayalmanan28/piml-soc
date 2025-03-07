@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Rectangle, Circle, Ellipse
 from final_value import opt_value_func_mesh as opt_value
-from animation.anim_MAN import animate_trajectories
+from utils.animation.anim_MAN import animate_trajectories
 
 def traj_test(model, initial_state, dynamics, dt = 0.0025, tMax = 1.0, tMin = 0):
     policy = model

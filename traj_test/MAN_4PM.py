@@ -5,7 +5,7 @@ import os
 from dynamics.MANAug4PM import MANAug4PM
 from utils import modules
 from final_value import opt_value_func_mesh as opt_value
-from animation.anim_MAN import animate_trajectories
+from utils.animation.anim_MAN import animate_trajectories
 
 init_points = []
 actual_cost = []

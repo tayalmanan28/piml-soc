@@ -4,7 +4,7 @@ from dynamics.Boat2DAug import Boat2DAug
 import os
 from utils import modules
 from final_value import opt_value_func_mesh as opt_value
-from animation.anim_Boat import animate_trajectory
+from utils.animation.anim_Boat import animate_trajectory
 
 def traj_test(model, initial_state, traj_num, dynamics, dt = 0.0025, tMax = 2, tMin = 0):
     policy = model
