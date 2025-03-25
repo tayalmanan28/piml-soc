@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="">
+  <meta name="keywords" content="HJ Reachability">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenOSIL</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/iisc_logo.png">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      extensions: ["tex2jax.js"],
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] },
+      tex2jax: { inlineMath: [ ["$", "$"], ["\\(","\\)"] ], displayMath: [ ["$$","$$"], ["\\[", "\\]"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno" },
+      TeX: { noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } } },
+      messageStyle: "none"
+    });
+    </script>    
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js"></script>
+</head>
+<body>
+
+ <!-- <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <img src="./static/images/iisc_logo.png" width="10%" alt="IISc Logo" align="center"/>
+        <div class="columns is-centered"></div>
+      </div>
+    </div>
+ </section> -->
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">    
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">GenOSIL: Generalized Optimal and Safe Robot Control using Parameter-Conditioned Imitation Learning</h1>
+            <div class="is-size-5 publication-authors">
+              <span class="author-block">
+                <a href="https://tayalmanan28.github.io/">Manan Tayal</a><sup>1</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://tayalmanan28.github.io/">Aditya Singh</a><sup>1</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://www.shishirny.com/">Shishir Kolathaya</a><sup>1</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://smlbansal.github.io/">Somil Bansal</a><sup>2</sup>,
+              </span>
+              
+            </div>
+  
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><sup>1</sup> Cyber Physical Systems, Indian Institute of Science (IISc), India</span>
+              <span class="author-block"><sup>2</sup>  Department of Aeronautics and Astronautics, Stanford University, USA</span>
+            </div>
+  
+            <div class="column has-text-centered">
+              <div class="publication-links">
+                <!-- PDF Link. -->
+                <span class="link-block">
+                  <a href="https://arxiv.org/pdf/2502.11057"
+                     class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </span>
+                    <span>Paper</span>
+                  </a>
+                </span>
+                <span class="link-block">
+                  <a href="https://arxiv.org/abs/2502.11057"
+                     class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                        <i class="ai ai-arxiv"></i>
+                    </span>
+                    <span>arXiv</span>
+                  </a>
+                </span>
+                <!-- Video Link. -->
+                <span class="link-block">
+                  <a href="https://tayalmanan28.github.io/piml-soc/"
+                     class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                        <i class="fab fa-youtube"></i>
+                    </span>
+                    <span>Video</span>
+                  </a>
+                </span>
+              </div>
+              <div class="column has-text-centered">
+                <div class="columns is-centered has-text-centered">
+                  <div class="column">
+                    
+                    <!-- <img src="images/ip.gif" width="48%"> -->
+                    <img src="images/Real_Franka_Key_Frame.png" width="100%">
+                </div>      
+              </div>
+  
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero is-light">
+    <div class="hero-body">
+      <div class="container is-max-desktop">    
+        <div class="columns is-centered has-text-centered">
+            <div class="column">
+              <h2 class="title is-3"> Framework </h2>
+            </div>
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column is-four-fifths">
+          <img src="images/GenOSIL_Diagram.png" alt="GenOSIL Architecture" width="100%">
+          <div class="content has-text-justified" style="padding-top: 5%">
+            <p>
+              <b>GenOSIL Architecture:</b> (Left) During training, expert demonstration trajectories—augmented with obstacle parameters, and goal coordinates—are used to learn the Variational Encoder to produce a latent representation (z), which is combined with agent’s state to drive training of the Policy Network. (Right) At inference, trained architecture deploys the Policy Network on a real agent, generating actions for safe navigation in dynamic environments.
+            </p>
+          </div>
+          </div>          
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">    
+        <div class="columns is-centered has-text-centered">
+            <div class="column" style="padding-bottom: 5%">
+              <h2 class="title is-3"> Autonomous Ground Vehicle </h2>
+            </div>
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column">
+            <img src="images/demo_agv.gif" width="80%" style="padding-right: 2%">
+          </div>
+        </div>
+  
+      </div>
+    </div>
+  </section>
+
+  <section class="hero is-light">
+    <div class="hero-body">
+      <div class="container is-max-desktop">    
+        <div class="columns is-centered has-text-centered">
+            <div class="column" style="padding-bottom: 1%">
+              <h2 class="title is-3"> Franka Manipulator task </h2>
+            </div>
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column" style="padding-bottom: 2%">
+            <h3 class="subtitle is-4"> Hardware Demonstrations</h3>
+            <p style="font-size: 1.2rem; color: gray;">Demonstration 1</p>
+          </div>
+        </div>
+        <div class="columns is-centered">
+          <div class="column is-half has-text-centered">
+            <figure>
+              <figcaption style="font-size: 1.1rem; color: gray;">Front View</figcaption>
+              <img src="images/demo_1_fv.gif" alt="Front View">
+            </figure>
+          </div>
+          <div class="column is-half has-text-centered" style="padding-bottom: 3%">
+            <figure>
+              <figcaption style="font-size: 1.1rem; color: gray;">Side View</figcaption>
+              <img src="images/demo_1_sv.gif" alt="Side View">
+            </figure>
+          </div>
+        </div>
+
+        <div class="columns is-centered has-text-centered">
+          <div class="column" style="padding-bottom: 1%">
+            <p style="font-size: 1.2rem; color: gray;">Demonstration 2</p>
+          </div>
+        </div>
+        <div class="columns is-centered">
+          <div class="column is-half has-text-centered">
+            <figure>
+              <figcaption style="font-size: 1.1rem; color: gray;">Front View</figcaption>
+              <img src="images/demo_2_fv.gif" alt="Front View">
+            </figure>
+          </div>
+          <div class="column is-half has-text-centered">
+            <figure>
+              <figcaption style="font-size: 1.1rem; color: gray;">Side View</figcaption>
+              <img src="images/demo_2_sv.gif" alt="Side View">
+            </figure>
+          </div>
+        </div>
+  
+      </div>
+    </div>
+  </section>
+ 
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">    
+        <div class="columns is-centered has-text-centered">
+          <div class="column" style="padding-bottom: 5%">
+            <h2 class="title is-3"> Comparison </h2>
+          </div>
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column is-four-fifths">
+          <div class="content has-text-justified">
+            <div class="columns is-centered has-text-centered">
+              <div class="column">
+                <img src="images/Baseline_Comparison_GenSIL.png" width="100%" style="padding-right: 2%">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>
+      @misc{tayal2025piml,
+        title={A Physics-Informed Machine Learning Framework for Safe and Optimal Control of Autonomous Systems}, 
+        author={Manan Tayal and Aditya Singh and Shishir Kolathaya and Somil Bansal},
+        year={2025},
+        eprint={2502.11057},
+        archivePrefix={arXiv},
+        primaryClass={cs.RO},
+        url={https://arxiv.org/abs/2502.11057}, 
+  }
+
+    </code></pre>
+  </div>
+</section>
+
+  
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <a class="icon-link"
+           href="./static/paper.pdf">
+          <i class="fas fa-file-pdf"></i>
+        </a>
+        <a class="icon-link" href="https://github.com/mumukshtayal" class="external-link" disabled>
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
