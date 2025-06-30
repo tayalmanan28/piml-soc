@@ -1,0 +1,21 @@
+python run_experiment.py --mode train \
+--experiment_name Track8DAug \
+--wandb_project RSS \
+--wandb_group Track8DAug \
+--wandb_name Track8DAug \
+--experiment_class DeepReach \
+--dynamics_class Track8DAug \
+--numpoints 65000 \
+--pretrain \
+--pretrain_iters 60000  \
+--counter_end 300000 \
+--num_epochs 360000 \
+--minWith target \
+--dirichlet_loss_divisor 0.015 \
+--batch_size 32 \
+--lr 0.00001 \
+--deepReach_model reg \
+--seed 0 \
+--num_nl 256 \
+--tMax 1.0 \
+--val_time_resolution 5
