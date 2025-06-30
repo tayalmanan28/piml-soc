@@ -54,6 +54,7 @@
         <div class="columns is-centered">    
           <div class="column has-text-centered">
             <h1 class="title is-1 publication-title">A Physics-Informed Machine Learning Framework for Safe and Optimal Control of Autonomous Systems</h1>
+            <h1 class="title is-4 publication-title"><a href="https://icml.cc/virtual/2025/poster/45200"> 42nd International Conference on Machine Learning (ICML), 2025</a></h1>
             <div class="is-size-5 publication-authors">
               <span class="author-block">
                 <a href="https://tayalmanan28.github.io/">Manan Tayal</a><sup>1</sup>,
@@ -73,6 +74,7 @@
             <div class="is-size-5 publication-authors">
               <span class="author-block"><sup>1</sup> Cyber Physical Systems, Indian Institute of Science (IISc), India</span>
               <span class="author-block"><sup>2</sup>  Department of Aeronautics and Astronautics, Stanford University, USA</span>
+              <span class="author-block"> </span>
             </div>
   
             <div class="column has-text-centered">
@@ -155,7 +157,7 @@
         </div>
         <div class="columns is-centered has-text-centered">
           <div class="column is-four-fifths">
-          <div class="content has-text-justified" style="padding-top: 5%">
+          <div class="content has-text-justified" style="padding-top: 1%">
             <p>
               As autonomous systems become more ubiquitous in daily life, ensuring high performance with guaranteed safety is crucial. However, safety and performance could be competing objectives, which makes their co-optimization difficult. Learning-based methods, such as Constrained Reinforcement Learning (CRL), achieve strong performance but lack formal safety guarantees due to safety being enforced as soft constraints, limiting their use in safety-critical settings. Conversely, formal methods such as Hamilton-Jacobi (HJ) Reachability Analysis and Control Barrier Functions (CBFs) provide rigorous safety assurances but often neglect performance, resulting in overly conservative controllers. To bridge this gap, we formulate the co-optimization of safety and performance as a state-constrained optimal control problem, where performance objectives are encoded via a cost function and safety requirements are imposed as state constraints. We demonstrate that the resultant value function satisfies a Hamilton-Jacobi-Bellman (HJB) equation, which we approximate efficiently using a novel physics-informed machine learning framework. In addition, we introduce a conformal prediction-based verification strategy to quantify the learning errors, recovering a high-confidence safety value function, along with a probabilistic error bound on performance degradation. Through several case studies, we demonstrate the efficacy of the proposed framework in enabling scalable learning of safe and performant controllers for complex, high-dimensional autonomous systems.
             </p>
@@ -212,14 +214,14 @@
   <div class="container is-max-desktop content">
     <h2 class="title">BibTeX</h2>
     <pre><code>
-    @inproceedings{tayal2025piml,
-      title={A Physics-Informed Machine Learning Framework for Safe and Optimal Control of Autonomous Systems},
-      author={Manan Tayal and Aditya Singh and Shishir Kolathaya and Somil Bansal},
-      booktitle={International Conference on Machine Learning},
-      pages={30130--30203},
-      year={2025},
-      organization={PMLR}
-    }
+    @inproceedings{
+	tayal2025a,
+	title={A Physics-Informed Machine Learning Framework for Safe and Optimal Control of Autonomous Systems},
+	author={Manan Tayal and Aditya Singh and Shishir Kolathaya and Somil Bansal},
+	booktitle={Forty-second International Conference on Machine Learning},
+	year={2025},
+	url={https://openreview.net/forum?id=SrfwiloGQF}
+	}
 
     </code></pre>
   </div>
