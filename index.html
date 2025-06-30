@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="description"
         content="">
-  <meta name="keywords" content="HJ Reachability">
+  <meta name="keywords" content="HJ Reachability, Co-optimization">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PIML-SOC</title>
 
@@ -118,43 +118,46 @@
                 </span>
                 <!-- Open Review -->
                 <span class="link-block">
-                  <a href="https://openreview.net/forum?id=SrfwiloGQF"
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                      <i class="ial2 icon-openreview-logo" data-astro-cid-fegobxyy> </i>
-                    </span>
-                    <span>Open Review</span>
-                  </a>
-                </span>
+		  <a href="https://openreview.net/forum?id=SrfwiloGQF"
+		     class="external-link button is-normal is-rounded is-dark">
+		    <span class="icon">
+		      <img src="https://openreview.net/favicon.ico"
+			   alt="OpenReview Logo"
+			   style="width:1em; height:1em; vertical-align:middle;">
+		    </span>
+		    <span>OpenReview</span>
+		  </a>
+		</span>
+		<span class="link-block">
+		  <a href="https://docs.google.com/presentation/d/e/2PACX-1vToKEIWGgnFcfKKDW_1KIkJQuZl_0UHM9TvttiSuy_4SaBttu5naxiP82q-gqmOZGrkF7ie89ndOi4Z/pub?start=false&loop=false&delayms=3000"
+		     class="external-link button is-normal is-rounded is-dark">
+		    <span class="icon">
+		      <i class="fas fa-file-powerpoint"></i>
+		    </span>
+		    <span>Slides</span>
+		  </a>
+		</span>
+
               </div>
-              <div class="column has-text-centered">
-                <div class="columns is-centered has-text-centered">
-                  <div class="column">
-                    <img src="images/piml-soc.jpg" width="100%">
-                </div>      
-              </div>
-  
-            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- <section class="hero is-light">
+  <section class="hero is-light">
     <div class="hero-body">
       <div class="container is-max-desktop">    
         <div class="columns is-centered has-text-centered">
             <div class="column">
-              <h2 class="title is-3"> Framework </h2>
+              <h2 class="title is-3">Abstract </h2>
             </div>
         </div>
         <div class="columns is-centered has-text-centered">
           <div class="column is-four-fifths">
-          <img src="images/GenOSIL_Diagram.png" alt="GenOSIL Architecture" width="100%">
           <div class="content has-text-justified" style="padding-top: 5%">
             <p>
-              <b>GenOSIL Architecture:</b> (Left) During training, expert demonstration trajectories—augmented with obstacle parameters, and goal coordinates—are used to learn the Variational Encoder to produce a latent representation (z), which is combined with agent’s state to drive training of the Policy Network. (Right) At inference, trained architecture deploys the Policy Network on a real agent, generating actions for safe navigation in dynamic environments.
+              As autonomous systems become more ubiquitous in daily life, ensuring high performance with guaranteed safety is crucial. However, safety and performance could be competing objectives, which makes their co-optimization difficult. Learning-based methods, such as Constrained Reinforcement Learning (CRL), achieve strong performance but lack formal safety guarantees due to safety being enforced as soft constraints, limiting their use in safety-critical settings. Conversely, formal methods such as Hamilton-Jacobi (HJ) Reachability Analysis and Control Barrier Functions (CBFs) provide rigorous safety assurances but often neglect performance, resulting in overly conservative controllers. To bridge this gap, we formulate the co-optimization of safety and performance as a state-constrained optimal control problem, where performance objectives are encoded via a cost function and safety requirements are imposed as state constraints. We demonstrate that the resultant value function satisfies a Hamilton-Jacobi-Bellman (HJB) equation, which we approximate efficiently using a novel physics-informed machine learning framework. In addition, we introduce a conformal prediction-based verification strategy to quantify the learning errors, recovering a high-confidence safety value function, along with a probabilistic error bound on performance degradation. Through several case studies, we demonstrate the efficacy of the proposed framework in enabling scalable learning of safe and performant controllers for complex, high-dimensional autonomous systems.
             </p>
           </div>
           </div>          
@@ -168,97 +171,41 @@
       <div class="container is-max-desktop">    
         <div class="columns is-centered has-text-centered">
             <div class="column" style="padding-bottom: 5%">
-              <h2 class="title is-3"> Autonomous Ground Vehicle </h2>
+              <h2 class="title is-3"> Algorithm </h2>
             </div>
         </div>
         <div class="columns is-centered has-text-centered">
           <div class="column">
-            <img src="images/demo_agv.gif" width="80%" style="padding-right: 2%">
+            <img src="images/piml-soc.gif" width="100%" style="padding-right: 2%">
           </div>
         </div>
+        
+        
   
       </div>
     </div>
   </section>
-
+  
+  
   <section class="hero is-light">
     <div class="hero-body">
       <div class="container is-max-desktop">    
         <div class="columns is-centered has-text-centered">
-            <div class="column" style="padding-bottom: 1%">
-              <h2 class="title is-3"> Franka Manipulator task </h2>
+            <div class="column">
+              <h2 class="title is-3">Video Presentation </h2>
             </div>
         </div>
-        <div class="columns is-centered has-text-centered">
-          <div class="column" style="padding-bottom: 2%">
-            <h3 class="subtitle is-4"> Hardware Demonstrations</h3>
-            <p style="font-size: 1.2rem; color: gray;">Demonstration 1</p>
-          </div>
-        </div>
-        <div class="columns is-centered">
-          <div class="column is-half has-text-centered">
-            <figure>
-              <figcaption style="font-size: 1.1rem; color: gray;">Front View</figcaption>
-              <img src="images/demo_1_fv.gif" alt="Front View">
-            </figure>
-          </div>
-          <div class="column is-half has-text-centered" style="padding-bottom: 3%">
-            <figure>
-              <figcaption style="font-size: 1.1rem; color: gray;">Side View</figcaption>
-              <img src="images/demo_1_sv.gif" alt="Side View">
-            </figure>
-          </div>
-        </div>
-
-        <div class="columns is-centered has-text-centered">
-          <div class="column" style="padding-bottom: 1%">
-            <p style="font-size: 1.2rem; color: gray;">Demonstration 2</p>
-          </div>
-        </div>
-        <div class="columns is-centered">
-          <div class="column is-half has-text-centered">
-            <figure>
-              <figcaption style="font-size: 1.1rem; color: gray;">Front View</figcaption>
-              <img src="images/demo_2_fv.gif" alt="Front View">
-            </figure>
-          </div>
-          <div class="column is-half has-text-centered">
-            <figure>
-              <figcaption style="font-size: 1.1rem; color: gray;">Side View</figcaption>
-              <img src="images/demo_2_sv.gif" alt="Side View">
-            </figure>
-          </div>
-        </div>
-  
+        <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+	  <iframe 
+	    src="https://recorder-v3.slideslive.com/?share=103103&s=f8d068a3-3fb0-4217-9e89-7a5213c4569b" 
+	    frameborder="0" 
+	    allowfullscreen 
+	    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+	  </iframe>
+	</div>
       </div>
     </div>
   </section>
- 
-
-  <section class="hero">
-    <div class="hero-body">
-      <div class="container is-max-desktop">    
-        <div class="columns is-centered has-text-centered">
-          <div class="column" style="padding-bottom: 5%">
-            <h2 class="title is-3"> Comparison </h2>
-          </div>
-        </div>
-        <div class="columns is-centered has-text-centered">
-          <div class="column is-four-fifths">
-          <div class="content has-text-justified">
-            <div class="columns is-centered has-text-centered">
-              <div class="column">
-                <img src="images/Baseline_Comparison_GenSIL.png" width="100%" style="padding-right: 2%">
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section> -->
-
-  
-
 
 
 <section class="section" id="BibTeX">
